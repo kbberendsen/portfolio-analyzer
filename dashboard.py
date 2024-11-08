@@ -53,10 +53,21 @@ def refresh_data():
     
     # Run the 'main.py' script to update the CSV
     try:
-        subprocess.run(['python', 'main.py'], check=True)  # Use 'python' instead of 'python3' if necessary
-        st.success("Data updated successfully!")
+        subprocess.run(['python', 'main.py'], check=True)
+        st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
     except subprocess.CalledProcessError as e:
         st.error(f"Error occurred while refreshing data: {e}")
+
+uploaded_file = None
+
+# Initialize the session state for startup refresh
+if "startup_refresh" not in st.session_state:
+    st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
+
+# Only run refresh_data on the first load
+if not st.session_state.startup_refresh:
+    refresh_data()
+    st.session_state.startup_refresh = True  # Mark that refresh has run
 
 # Load monthly and daily data
 df = pd.read_csv(os.path.join('output', 'portfolio_monthly.csv'))
