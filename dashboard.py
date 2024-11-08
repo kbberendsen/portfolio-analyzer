@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
 import plotly.express as px
 import subprocess
 import os
@@ -60,15 +60,6 @@ def refresh_data():
 
 uploaded_file = None
 
-# Initialize the session state for startup refresh
-if "startup_refresh" not in st.session_state:
-    st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
-
-# Only run refresh_data on the first load
-if not st.session_state.startup_refresh:
-    refresh_data()
-    st.session_state.startup_refresh = True  # Mark that refresh has run
-
 # Load monthly and daily data
 df = pd.read_csv(os.path.join('output', 'portfolio_monthly.csv'))
 daily_df = pd.read_csv(os.path.join('output', 'portfolio_daily.csv'))
@@ -85,16 +76,9 @@ with st.sidebar:
     # Tabs for Daily and Monthly data
     tab_selection = st.radio("Select Data View", ["Monthly", "Daily"])
 
-    # File uploader for the user to upload a new CSV file
-    uploaded_file = st.file_uploader("Upload New Transactions CSV", type=["csv"])
-
-    # Refresh Button to update the CSV
-    if st.button('Refresh Data'):
-        refresh_data()
-
     # Sort product options
     product_options = sorted(df['product'].unique().tolist())
-    if "Full Portfolio" in product_options:
+    if "Full portfolio" in product_options:
         product_options.remove("Full portfolio")
         product_options.insert(0, "Full portfolio")
 
@@ -115,34 +99,42 @@ if tab_selection == "Monthly":
 
     with st.sidebar:
         # Date range filter
-        st.subheader("Filter by End Date Range")
+        st.subheader("Select Date Range")
+
+        # Set the full date range as min and max values for the slider
         min_date = df['start_date'].min().to_pydatetime()
         max_date = df['end_date'].max().to_pydatetime()
 
-        min_date, max_date = st.slider(
+        # Set the default start date
+        default_start_date = min_date
+        
+        # Create the slider
+        selected_start_date, selected_end_date = st.slider(
             "Select Date Range",
-            value=(min_date, max_date),
-            format="YYYY-MM"
+            min_value=min_date,
+            max_value=max_date,
+            value=(default_start_date, max_date),
+            format="YYYY-MM-DD"
         )
 
     # Filter data by selected product
     product_df = df[df['product'] == selected_product]
     
     # Filter data by date range
-    filtered_df = product_df[(product_df['end_date'] >= min_date) & (product_df['end_date'] <= max_date)]
+    filtered_df = product_df[(product_df['end_date'] >= selected_start_date) & (product_df['end_date'] <= selected_end_date)]
 
     # Plot performance over time
     if not filtered_df.empty:
-        st.subheader(f"{selected_metric} for {selected_product} - By Month")
+        st.subheader(f"{selected_metric} for {selected_product} - Monthly")
         fig = px.line(filtered_df, x='end_date', y=selected_metric, 
-                      title=f"{selected_metric} for {selected_product} - By Month", 
+                      title=f"{selected_metric} for {selected_product} - Monthly", 
                       labels={"end_date": "End Date", selected_metric: selected_metric})
         fig.update_layout(width=1200, height=600)
         st.plotly_chart(fig, use_container_width=False)
     else:
         st.write("No data available for the selected product and date range.")
 
-    st.subheader("Monthly data")
+    st.subheader("Monthly Data")
     st.write(filtered_df)
 
 # Handle daily data
@@ -154,18 +146,26 @@ elif tab_selection == "Daily":
 
     with st.sidebar:
         # Date range filter
-        st.subheader("Filter by End Date Range")
+        st.subheader("Select Date Range")
+
+        # Set the full date range as min and max values for the slider
         daily_min_date = daily_df['start_date'].min().to_pydatetime()
         daily_max_date = daily_df['end_date'].max().to_pydatetime()
 
-        daily_min_date, daily_max_date = st.slider(
+        # Set the default range to the last 30 days
+        default_start_date = daily_max_date - timedelta(days=30)
+        
+        # Create the slider with the full date range but defaulting to the last 30 days
+        selected_start_date, selected_end_date = st.slider(
             "Select Date Range",
-            value=(daily_min_date, daily_max_date),
+            min_value=daily_min_date,
+            max_value=daily_max_date,
+            value=(default_start_date, daily_max_date),
             format="YYYY-MM-DD"
         )
 
     # Filter data by date range
-    daily_filtered_df = daily_product_df[(daily_product_df['end_date'] >= daily_min_date) & (daily_product_df['end_date'] <= daily_max_date)]
+    daily_filtered_df = daily_product_df[(daily_product_df['end_date'] >= selected_start_date) & (daily_product_df['end_date'] <= selected_end_date)]
 
     # Plot performance over time
     if not daily_filtered_df.empty:
@@ -178,5 +178,24 @@ elif tab_selection == "Daily":
     else:
         st.write("No data available for the selected product and date range.")
 
-    st.subheader("Daily data")
+    st.subheader("Daily Data")
     st.write(daily_filtered_df)
+
+# File upload
+with st.sidebar:
+    st.subheader("Refresh Data")
+    # File uploader for the user to upload a new CSV file
+    uploaded_file = st.file_uploader("Upload New Transactions CSV", type=["csv"])
+
+    # Refresh Button to update the CSV
+    if st.button('Refresh Data'):
+        refresh_data()
+
+    # Initialize the session state for startup refresh
+    if "startup_refresh" not in st.session_state:
+        st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
+
+    # Only run refresh_data on the first load
+    if not st.session_state.startup_refresh:
+        refresh_data()
+        st.session_state.startup_refresh = True  # Mark that refresh has run
