@@ -60,16 +60,38 @@ def refresh_data():
 
 uploaded_file = None
 
+# Dictionary to rename the performance metrics columns for display purposes
+rename_dict = {
+    'product': 'Product',
+    'ticker': 'Ticker',
+    'quantity': 'Quantity',
+    'start_date': 'Start Date',
+    'end_date': 'End Date',
+    'avg_cost': 'Average Cost',
+    'total_cost': 'Total Cost',
+    'current_value': 'Current Value',
+    'current_money_weighted_return': 'Current Money Weighted Return (%)',
+    'realized_return': 'Realized Return (%)',
+    'net_return': 'Net Return (%)',
+    'current_performance_percentage': 'Current Performance (%)',
+    'net_performance_percentage': 'Net Performance (%)'
+}
+
 # Load monthly and daily data
 df = pd.read_csv(os.path.join('output', 'portfolio_monthly.csv'))
 daily_df = pd.read_csv(os.path.join('output', 'portfolio_daily.csv'))
 
-# Convert dates to datetime format
-df['start_date'] = df['start_date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
-df['end_date'] = df['end_date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+# Rename columns
+df = df.rename(columns=rename_dict)
+daily_df = daily_df.rename(columns=rename_dict)
 
-daily_df['start_date'] = daily_df['start_date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
-daily_df['end_date'] = daily_df['end_date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+# Convert dates to datetime format
+df['Start Date'] = df['Start Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+df['End Date'] = df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+
+daily_df['Start Date'] = daily_df['Start Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+daily_df['End Date'] = daily_df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+
 
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:
@@ -77,7 +99,7 @@ with st.sidebar:
     tab_selection = st.radio("Select Data View", ["Monthly", "Daily"])
 
     # Sort product options
-    product_options = sorted(df['product'].unique().tolist())
+    product_options = sorted(df['Product'].unique().tolist())
     if "Full portfolio" in product_options:
         product_options.remove("Full portfolio")
         product_options.insert(0, "Full portfolio")
@@ -87,8 +109,8 @@ with st.sidebar:
     selected_product = st.selectbox("Select a Product", options=product_options, index=default_index, key="product_select")
 
     # Performance metrics
-    performance_metrics = [col for col in df.columns if col not in ['product', 'ticker', 'quantity', 'start_date', 'end_date']]
-    default_index_per = performance_metrics.index("net_performance_percentage")
+    performance_metrics = [col for col in df.columns if col not in ['Product', 'Ticker', 'Start Date', 'End Date']]
+    default_index_per = performance_metrics.index("Net Performance (%)")
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select")
 
 st.title("Stock Portfolio Performance Dashboard") 
@@ -102,8 +124,8 @@ if tab_selection == "Monthly":
         st.subheader("Select Date Range")
 
         # Set the full date range as min and max values for the slider
-        min_date = df['start_date'].min().to_pydatetime()
-        max_date = df['end_date'].max().to_pydatetime()
+        min_date = df['Start Date'].min().to_pydatetime()
+        max_date = df['End Date'].max().to_pydatetime()
 
         # Set the default start date
         default_start_date = min_date
@@ -114,23 +136,24 @@ if tab_selection == "Monthly":
             min_value=min_date,
             max_value=max_date,
             value=(default_start_date, max_date),
-            format="YYYY-MM-DD"
+            format="YYYY-MM"
         )
 
     # Filter data by selected product
-    product_df = df[df['product'] == selected_product]
+    product_df = df[df['Product'] == selected_product]
     
     # Filter data by date range
-    filtered_df = product_df[(product_df['end_date'] >= selected_start_date) & (product_df['end_date'] <= selected_end_date)]
+    filtered_df = product_df[(product_df['End Date'] >= selected_start_date) & (product_df['End Date'] <= selected_end_date)]
 
     # Plot performance over time
     if not filtered_df.empty:
         st.subheader(f"{selected_metric} for {selected_product} - Monthly")
-        fig = px.line(filtered_df, x='end_date', y=selected_metric, 
+        fig = px.line(filtered_df, x='End Date', y=selected_metric, 
                       title=f"{selected_metric} for {selected_product} - Monthly", 
                       labels={"end_date": "End Date", selected_metric: selected_metric})
         fig.update_layout(width=1200, height=600)
         st.plotly_chart(fig, use_container_width=False)
+
     else:
         st.write("No data available for the selected product and date range.")
 
@@ -142,15 +165,15 @@ elif tab_selection == "Daily":
     st.title("Daily")
 
     # Filter data by selected product
-    daily_product_df = daily_df[daily_df['product'] == selected_product]
+    daily_product_df = daily_df[daily_df['Product'] == selected_product]
 
     with st.sidebar:
         # Date range filter
         st.subheader("Select Date Range")
 
         # Set the full date range as min and max values for the slider
-        daily_min_date = daily_df['start_date'].min().to_pydatetime()
-        daily_max_date = daily_df['end_date'].max().to_pydatetime()
+        daily_min_date = daily_df['Start Date'].min().to_pydatetime()
+        daily_max_date = daily_df['End Date'].max().to_pydatetime()
 
         # Set the default range to the last 30 days
         default_start_date = daily_max_date - timedelta(days=30)
@@ -165,12 +188,12 @@ elif tab_selection == "Daily":
         )
 
     # Filter data by date range
-    daily_filtered_df = daily_product_df[(daily_product_df['end_date'] >= selected_start_date) & (daily_product_df['end_date'] <= selected_end_date)]
+    daily_filtered_df = daily_product_df[(daily_product_df['End Date'] >= selected_start_date) & (daily_product_df['End Date'] <= selected_end_date)]
 
     # Plot performance over time
     if not daily_filtered_df.empty:
         st.subheader(f"{selected_metric} for {selected_product} - Daily")
-        daily_fig = px.line(daily_filtered_df, x='end_date', y=selected_metric, 
+        daily_fig = px.line(daily_filtered_df, x='End Date', y=selected_metric, 
                             title=f"{selected_metric} for {selected_product} - Daily", 
                             labels={"end_date": "End Date", selected_metric: selected_metric})
         daily_fig.update_layout(width=1200, height=600)
