@@ -1,3 +1,9 @@
 *.pyc
 *.out
 *.txt
+
+# Ignore all .pkl files in the data folder
+data/*.pkl 
+
+# Ignore all files in the output folder
+output/*
