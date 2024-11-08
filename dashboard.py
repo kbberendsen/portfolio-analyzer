@@ -96,7 +96,7 @@ daily_df['End Date'] = daily_df['End Date'].apply(lambda x: datetime.strptime(x,
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:
     # Tabs for Daily and Monthly data
-    tab_selection = st.radio("Select Data View", ["Monthly", "Daily"])
+    tab_selection = st.radio(label="Select Data View", options=["Monthly", "Daily"])
 
     # Sort product options
     product_options = sorted(df['Product'].unique().tolist())
@@ -120,8 +120,6 @@ if tab_selection == "Monthly":
     st.title("Monthly")
 
     with st.sidebar:
-        # Date range filter
-        st.subheader("Select Date Range")
 
         # Set the full date range as min and max values for the slider
         min_date = df['Start Date'].min().to_pydatetime()
@@ -168,8 +166,6 @@ elif tab_selection == "Daily":
     daily_product_df = daily_df[daily_df['Product'] == selected_product]
 
     with st.sidebar:
-        # Date range filter
-        st.subheader("Select Date Range")
 
         # Set the full date range as min and max values for the slider
         daily_min_date = daily_df['Start Date'].min().to_pydatetime()
@@ -206,7 +202,6 @@ elif tab_selection == "Daily":
 
 # File upload
 with st.sidebar:
-    st.subheader("Refresh Data")
     # File uploader for the user to upload a new CSV file
     uploaded_file = st.file_uploader("Upload New Transactions CSV", type=["csv"])
 
