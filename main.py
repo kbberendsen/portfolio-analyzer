@@ -9,5 +9,5 @@ analyzer = PortfolioAnalyzer(transactions)
 # Monthly
 calc_monthly(analyzer)
 
-# YTD
-calc_daily(analyzer, '2024-01-01')
+# Daily
+calc_daily(analyzer, '2024-06-03')

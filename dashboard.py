@@ -58,6 +58,20 @@ def refresh_data():
     except subprocess.CalledProcessError as e:
         st.error(f"Error occurred while refreshing data: {e}")
 
+def clear_cache():
+    cache_path_monthly = os.path.join('data', 'portfolio_results_monthly.pkl')
+    cache_path_daily = os.path.join('data', 'portfolio_results_daily.pkl')
+
+    if os.path.isfile(cache_path_monthly):
+        os.remove(cache_path_monthly)
+        print(f"{cache_path_monthly} has been deleted.")
+
+    if os.path.isfile(cache_path_daily):
+        os.remove(cache_path_daily)
+        print(f"{cache_path_daily} has been deleted.")
+
+    st.info("Data cleared. Use 'Refresh Data' to update data. This will take a few mintues.")
+
 uploaded_file = None
 
 # Dictionary to rename the performance metrics columns for display purposes
@@ -91,7 +105,6 @@ df['End Date'] = df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d')
 
 daily_df['Start Date'] = daily_df['Start Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
 daily_df['End Date'] = daily_df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
-
 
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:
@@ -194,7 +207,7 @@ if tab_selection == "Monthly":
         fig = px.line(filtered_df, x='End Date', y=selected_metric, 
                       title=f"{selected_metric} for {selected_product}", 
                       labels={"end_date": "End Date", selected_metric: selected_metric})
-        fig.update_layout(width=1200, height=600)
+        fig.update_layout(width=1200, height=500)
         st.plotly_chart(fig, use_container_width=False)
 
     else:
@@ -213,8 +226,10 @@ elif tab_selection == "Daily":
     with st.sidebar:
 
         # Set the full date range as min and max values for the slider
-        daily_min_date = daily_df['Start Date'].min().to_pydatetime()
+        #daily_min_date = daily_df['Start Date'].min().to_pydatetime()
         daily_max_date = daily_df['End Date'].max().to_pydatetime()
+        # Subtract 3 months from the max date
+        daily_min_date = daily_max_date - timedelta(days=90)
 
         # Set the default range to the last 30 days
         default_start_date = daily_max_date - timedelta(days=30)
@@ -282,7 +297,7 @@ elif tab_selection == "Daily":
         daily_fig = px.line(daily_filtered_df, x='End Date', y=selected_metric, 
                             title=f"{selected_metric} for {selected_product}", 
                             labels={"end_date": "End Date", selected_metric: selected_metric})
-        daily_fig.update_layout(width=1200, height=600)
+        daily_fig.update_layout(width=1200, height=500)
         st.plotly_chart(daily_fig, use_container_width=False)
     else:
         st.write("No data available for the selected product and date range.")
@@ -307,3 +322,6 @@ with st.sidebar:
     if not st.session_state.startup_refresh:
         refresh_data()
         st.session_state.startup_refresh = True  # Mark that refresh has run
+    
+    if st.button('Clear Cached Data', type="primary"):
+        clear_cache()
