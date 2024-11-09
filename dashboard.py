@@ -9,6 +9,8 @@ import os
 # Set the page title for the browser tab
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:")
 
+st.title("Stock Portfolio Dashboard") 
+
 def check_columns(uploaded_df):
     # Define the expected columns for the transaction data
     required_columns = ['Datum', 'ISIN', 'Beurs', 'Aantal', 'Koers', 'Waarde', 'Transactiekosten en/of']
@@ -125,8 +127,6 @@ with st.sidebar:
     performance_metrics = [col for col in df.columns if col not in ['Product', 'Ticker', 'Start Date', 'End Date']]
     default_index_per = performance_metrics.index("Net Performance (%)")
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select")
-
-st.title("Stock Portfolio Dashboard") 
 
 # Handle monthly data
 if tab_selection == "Monthly":
