@@ -67,12 +67,12 @@ rename_dict = {
     'quantity': 'Quantity',
     'start_date': 'Start Date',
     'end_date': 'End Date',
-    'avg_cost': 'Average Cost',
-    'total_cost': 'Total Cost',
-    'current_value': 'Current Value',
-    'current_money_weighted_return': 'Current Money Weighted Return (%)',
-    'realized_return': 'Realized Return (%)',
-    'net_return': 'Net Return (%)',
+    'avg_cost': 'Average Cost (€)',
+    'total_cost': 'Total Cost (€)',
+    'current_value': 'Current Value (€)',
+    'current_money_weighted_return': 'Current Money Weighted Return (€)',
+    'realized_return': 'Realized Return (€)',
+    'net_return': 'Net Return (€)',
     'current_performance_percentage': 'Current Performance (%)',
     'net_performance_percentage': 'Net Performance (%)'
 }
@@ -113,11 +113,11 @@ with st.sidebar:
     default_index_per = performance_metrics.index("Net Performance (%)")
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select")
 
-st.title("Stock Portfolio Performance Dashboard") 
+st.title("Stock Portfolio Dashboard") 
 
 # Handle monthly data
 if tab_selection == "Monthly":
-    st.title("Monthly")
+    st.header(f"{selected_product} - Monthly")
 
     with st.sidebar:
 
@@ -143,11 +143,56 @@ if tab_selection == "Monthly":
     # Filter data by date range
     filtered_df = product_df[(product_df['End Date'] >= selected_start_date) & (product_df['End Date'] <= selected_end_date)]
 
+    # Top level metrics
+    if not filtered_df.empty:
+        # Top current value
+        top_current_value_start = filtered_df.iloc[-2]['Current Value (€)']
+        top_current_value_end = filtered_df.iloc[-1]['Current Value (€)']
+
+        if top_current_value_start != 0:
+            top_current_value_delta = round((top_current_value_end-top_current_value_start), 2)
+            top_current_value_delta_eur = f"+€ {abs(top_current_value_delta)}" if top_current_value_delta > 0 else f"-€ {abs(top_current_value_delta)}"
+            top_current_value_delta_per = round(((top_current_value_end-top_current_value_start)/(top_current_value_start))*100, 2)
+        else:
+            top_current_value_delta_per = 0
+
+        # Top current return
+        top_current_return_start = filtered_df.iloc[-2]['Current Money Weighted Return (€)']
+        top_current_return_end = filtered_df.iloc[-1]['Current Money Weighted Return (€)']
+
+        if top_current_return_start != 0:
+            top_current_return_delta = round((top_current_return_end-top_current_return_start), 2)
+            top_current_return_delta_eur = f"+€ {abs(top_current_return_delta)}" if top_current_return_delta > 0 else f"-€ {abs(top_current_return_delta)}"
+            top_current_return_delta_per = round(((top_current_return_end-top_current_return_start)/(top_current_return_start))*100, 2)
+        else:
+            top_current_return_delta_per = 0
+
+        # Top net return
+        top_net_return_start = filtered_df.iloc[-2]['Net Return (€)']
+        top_net_return_end = filtered_df.iloc[-1]['Net Return (€)']
+
+        if top_net_return_start != 0:
+            top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
+            top_net_return_delta_eur = f"+€ {abs(top_net_return_delta)}" if top_net_return_delta > 0 else f"-€ {abs(top_net_return_delta)}"
+            top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/(top_net_return_start))*100, 2)
+        else:
+            top_net_return_delta_per = 0
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(label="Last Month Current Value", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per}% ({top_current_value_delta_eur})")
+        with col2:
+            st.metric(label="Last Month Current Return", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per}% ({top_current_return_delta_eur})")
+        with col3:
+            st.metric(label="Last Month Net Return", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per}% ({top_net_return_delta_eur})")
+
+        st.divider()
+
     # Plot performance over time
     if not filtered_df.empty:
-        st.subheader(f"{selected_metric} for {selected_product} - Monthly")
+        st.subheader(f"{selected_metric} for {selected_product}")
         fig = px.line(filtered_df, x='End Date', y=selected_metric, 
-                      title=f"{selected_metric} for {selected_product} - Monthly", 
+                      title=f"{selected_metric} for {selected_product}", 
                       labels={"end_date": "End Date", selected_metric: selected_metric})
         fig.update_layout(width=1200, height=600)
         st.plotly_chart(fig, use_container_width=False)
@@ -160,7 +205,7 @@ if tab_selection == "Monthly":
 
 # Handle daily data
 elif tab_selection == "Daily":
-    st.title("Daily")
+    st.header(f"{selected_product} - Daily")
 
     # Filter data by selected product
     daily_product_df = daily_df[daily_df['Product'] == selected_product]
@@ -186,11 +231,56 @@ elif tab_selection == "Daily":
     # Filter data by date range
     daily_filtered_df = daily_product_df[(daily_product_df['End Date'] >= selected_start_date) & (daily_product_df['End Date'] <= selected_end_date)]
 
+    # Top level metrics
+    if not daily_filtered_df.empty:
+        # Top current value
+        top_current_value_start = daily_filtered_df.iloc[-2]['Current Value (€)']
+        top_current_value_end = daily_filtered_df.iloc[-1]['Current Value (€)']
+
+        if top_current_value_start != 0:
+            top_current_value_delta = round((top_current_value_end-top_current_value_start), 2)
+            top_current_value_delta_eur = f"+€ {abs(top_current_value_delta)}" if top_current_value_delta > 0 else f"-€ {abs(top_current_value_delta)}"
+            top_current_value_delta_per = round(((top_current_value_end-top_current_value_start)/(top_current_value_start))*100, 2)
+        else:
+            top_current_value_delta_per = 0
+
+        # Top current return
+        top_current_return_start = daily_filtered_df.iloc[-2]['Current Money Weighted Return (€)']
+        top_current_return_end = daily_filtered_df.iloc[-1]['Current Money Weighted Return (€)']
+
+        if top_current_return_start != 0:
+            top_current_return_delta = round((top_current_return_end-top_current_return_start), 2)
+            top_current_return_delta_eur = f"+€ {abs(top_current_return_delta)}" if top_current_return_delta > 0 else f"-€ {abs(top_current_return_delta)}"
+            top_current_return_delta_per = round(((top_current_return_end-top_current_return_start)/(top_current_return_start))*100, 2)
+        else:
+            top_current_return_delta_per = 0
+
+        # Top net return
+        top_net_return_start = daily_filtered_df.iloc[-2]['Net Return (€)']
+        top_net_return_end = daily_filtered_df.iloc[-1]['Net Return (€)']
+
+        if top_net_return_start != 0:
+            top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
+            top_net_return_delta_eur = f"+€ {abs(top_net_return_delta)}" if top_net_return_delta > 0 else f"-€ {abs(top_net_return_delta)}"
+            top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/(top_net_return_start))*100, 2)
+        else:
+            top_net_return_delta_per = 0
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(label="Last Day Current Value", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per}% ({top_current_value_delta_eur})")
+        with col2:
+            st.metric(label="Last Day Current Return", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per}% ({top_current_return_delta_eur})")
+        with col3:
+            st.metric(label="Last Day Net Return", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per}% ({top_net_return_delta_eur})")
+
+        st.divider()
+    
     # Plot performance over time
     if not daily_filtered_df.empty:
-        st.subheader(f"{selected_metric} for {selected_product} - Daily")
+        st.subheader(f"{selected_metric} for {selected_product}")
         daily_fig = px.line(daily_filtered_df, x='End Date', y=selected_metric, 
-                            title=f"{selected_metric} for {selected_product} - Daily", 
+                            title=f"{selected_metric} for {selected_product}", 
                             labels={"end_date": "End Date", selected_metric: selected_metric})
         daily_fig.update_layout(width=1200, height=600)
         st.plotly_chart(daily_fig, use_container_width=False)

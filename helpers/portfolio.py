@@ -90,6 +90,11 @@ def calc_daily(analyzer, start_date):
     try:
         portfolio_results_df = pd.read_pickle(cache_file_path)
         print('Daily file found')
+
+        # Remove last 3 days to force refresh (get end of day data)
+        last_3_days = sorted(portfolio_results_df['end_date'].unique())[-3:]
+        portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_3_days)]
+
     except (FileNotFoundError, pd.errors.EmptyDataError):
         # Start with an empty DataFrame if the file doesn't exist
         portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
