@@ -16,7 +16,7 @@ isin_to_ticker = {
     'CA09228F1036': 'BB.TO',
     'US79466L3024': 'CRM',
     'US69608A1088': 'PLTR',
-    'IE00BYVJRP78': 'SUSM.L'
+    'IE00BYVJRP78': 'QDVS.DE'
 }
 
 ticker_to_name = {
@@ -36,5 +36,5 @@ ticker_to_name = {
     'BB.TO': 'BlackBerry',
     'CRM': 'Salesforce Inc.',
     'PLTR': 'Palantir Technologies',
-    'SUSM.L': 'ETF - Emerging markets (2)'
+    'QDVS.DE': 'ETF - Emerging markets (2)'
 }
