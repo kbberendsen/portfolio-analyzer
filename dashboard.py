@@ -136,8 +136,8 @@ if tab_selection == "Monthly":
             value=(default_start_date, max_date),
             format="YYYY-MM"
         )
-
-    # Filter data by selected product
+    
+    # Filter on product
     product_df = df[df['Product'] == selected_product]
     
     # Filter data by date range
@@ -206,8 +206,8 @@ if tab_selection == "Monthly":
 # Handle daily data
 elif tab_selection == "Daily":
     st.header(f"{selected_product} - Daily")
-
-    # Filter data by selected product
+ 
+    # Filter on product
     daily_product_df = daily_df[daily_df['Product'] == selected_product]
 
     with st.sidebar:

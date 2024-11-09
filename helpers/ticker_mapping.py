@@ -20,13 +20,13 @@ isin_to_ticker = {
 }
 
 ticker_to_name = {
-    'NQSE.DE': 'Nasdaq',
-    '2B7K.DE': 'World',
+    'NQSE.DE': 'ETF - Nasdaq',
+    '2B7K.DE': 'ETF - World',
     'PYPL': 'PayPal',
-    'AYEM.DE': 'Emerging markets',
-    'UIMT.AS': 'Pacific',
-    'IESE.AS': 'Europe',
-    'UIMP.AS': 'USA',
+    'AYEM.DE': 'ETF - Emerging markets',
+    'UIMT.AS': 'ETF - Pacific',
+    'IESE.AS': 'ETF - Europe',
+    'UIMP.AS': 'ETF - USA',
     'NET': 'Cloudflare',
     'MDB': 'MongoDB',
     'TLRY': 'Tilray Brands',
@@ -36,5 +36,5 @@ ticker_to_name = {
     'BB.TO': 'BlackBerry',
     'CRM': 'Salesforce Inc.',
     'PLTR': 'Palantir Technologies',
-    'SUSM.L': 'Emerging markets'
+    'SUSM.L': 'ETF - Emerging markets (2)'
 }
