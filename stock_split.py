@@ -76,12 +76,15 @@ included_products = st.multiselect(
 # Prepare the split DataFrame for user input and filter by selected products
 filtered_split_df = daily_df_filtered[daily_df_filtered['Product'].isin(included_products)].copy()
 
-# Initialize or update split_df in session state to retain changes and stock prices
+# Replace Current Value from CSV and recalculate using most up to date stock prices
+filtered_split_df['Current Price (€)'] = filtered_split_df['Ticker'].apply(get_current_stock_price)
+filtered_split_df['Current Value (€)'] = filtered_split_df['Current Price (€)'] * filtered_split_df['Quantity']
+
+filtered_split_df['Current Split (%)'] = round((filtered_split_df['Current Value (€)'] / sum(filtered_split_df['Current Value (€)'])) * 100, 2)
+filtered_split_df['Wanted Split (%)'] = filtered_split_df['Current Split (%)']
+
+# Initialize or update split_df in session state to retain changes
 if 'split_df' not in st.session_state or st.session_state.split_df['Product'].tolist() != filtered_split_df['Product'].tolist():
-    filtered_split_df['Current Price (€)'] = filtered_split_df['Ticker'].apply(get_current_stock_price)
-    filtered_split_df['Current Value (€)'] = filtered_split_df['Current Price (€)'] * filtered_split_df['Quantity']
-    filtered_split_df['Current Split (%)'] = round((filtered_split_df['Current Value (€)'] / sum(filtered_split_df['Current Value (€)'])) * 100, 2)
-    filtered_split_df['Wanted Split (%)'] = filtered_split_df['Current Split (%)']
     st.session_state.split_df = filtered_split_df[['Product', 'Ticker', 'Wanted Split (%)', 'Quantity', 'Current Price (€)', 'Current Value (€)', 'Current Split (%)']].copy()
 
 # Display editable split DataFrame where users can adjust "Wanted Split (%)"
@@ -106,7 +109,7 @@ def calculate_new_values():
         st.session_state.split_df = edited_split_df
 
     # Calculate the new total value (current value + amount to invest)
-    current_total_value = sum(st.session_state.split_df['Current Value (€)'])
+    current_total_value = sum(filtered_split_df['Current Value (€)'])
     new_total = to_invest + current_total_value
 
     # Calculate columns for amount to buy
@@ -138,9 +141,6 @@ with st.sidebar:
     if st.button('Refresh Data'):
         refresh_data()
 
-    # Refresh stock prices and update tables without rerunning the entire page
+    # Refreshes stock prices by rerunning the entire page
     if st.button("Refresh Stock Prices"):
-        # Update only the stock prices in split_df
-        st.session_state.split_df['Current Price (€)'] = st.session_state.split_df['Ticker'].apply(get_current_stock_price)
-        st.session_state.split_df['Current Value (€)'] = st.session_state.split_df['Current Price (€)'] * st.session_state.split_df['Quantity']
-        st.session_state.split_df['Current Split (%)'] = round((st.session_state.split_df['Current Value (€)'] / sum(st.session_state.split_df['Current Value (€)'])) * 100, 2)
+        st.rerun()
