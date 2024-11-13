@@ -30,34 +30,39 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
                                                     'realized_return', 'net_return', 'current_performance_percentage', 
                                                     'net_performance_percentage'])
 
+
     # Loop over each end date, calculate portfolio results, and add to the list
     for end_date in end_dates:
-        # Format end date to string for comparison
-        end_date_str = end_date.strftime('%Y-%m-%d')
-        
-        # Check if the result for this end date already exists in the DataFrame
-        if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
-            continue  # Skip if already present
+        try:
+            # Format end date to string for comparison
+            end_date_str = end_date.strftime('%Y-%m-%d')
 
-        print(f'Retrieving data for: {end_date_str}')
-        
-        transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
-        stock_list = list(transactions_before_end["Stock"].unique())
-        
-        result = analyzer.calculate_all_stocks_mwr(
-            start_date=start_date.strftime('%Y-%m-%d'), 
-            end_date=end_date_str, 
-            stocks=stock_list
-        )
-        
-        for key in result:
-            portfolio_data = result.get(key)
+            # Check if the result for this end date already exists in the DataFrame
+            if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
+                continue  # Skip if already present
+
+            print(f'Retrieving data for: {end_date_str}')
             
-            # Ensure end_date is included in the portfolio_data
-            portfolio_data['end_date'] = end_date_str
+            transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
+            stock_list = list(transactions_before_end["Stock"].unique())
             
-            # Append the new data to the list
-            portfolio_results_list.append(portfolio_data)
+            result = analyzer.calculate_all_stocks_mwr(
+                start_date=start_date.strftime('%Y-%m-%d'), 
+                end_date=end_date_str, 
+                stocks=stock_list
+            )
+            
+            for key in result:
+                portfolio_data = result.get(key)
+                
+                # Ensure end_date is included in the portfolio_data
+                portfolio_data['end_date'] = end_date_str
+                
+                # Append the new data to the list
+                portfolio_results_list.append(portfolio_data)
+        except Exception as e:
+            print(f'Failed to retrieve monthly data for {end_date}: {e}')
+            continue
 
     # Combine the list into a DataFrame if there are new results
     if portfolio_results_list:
@@ -105,42 +110,46 @@ def calc_daily(analyzer, start_date):
 
     # Loop over each end date, calculate portfolio results, and add to the list
     for end_date in end_dates:
-        # Format end date to string for comparison
-        end_date_str = end_date.strftime('%Y-%m-%d')
-        
-        # Check if the result for this end date already exists in the DataFrame
-        if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
-            continue  # Skip if already present
-
-        print(f'Retrieving data for: {end_date_str}')
-
-        # Ensure that the transactions before the end date are not empty
-        transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
-        if transactions_before_end.empty:
-            print(f"No transactions found for date: {end_date_str}. Skipping...")
-            continue
-
-        stock_list = list(transactions_before_end["Stock"].unique())
-        
-        result = analyzer.calculate_all_stocks_mwr(
-            start_date=start_date.strftime('%Y-%m-%d'), 
-            end_date=end_date_str, 
-            stocks=stock_list
-        )
-        
-        for key in result:
-            portfolio_data = result.get(key)
+        # Try to get end_date data, else continue
+        try:
+            # Format end date to string for comparison
+            end_date_str = end_date.strftime('%Y-%m-%d')
             
-            # Check if portfolio_data is valid before proceeding
-            if portfolio_data is None or not isinstance(portfolio_data, dict):
-                print(f"Stock data is missing or invalid for date: {end_date_str}. Result: {result}")
+            # Check if the result for this end date already exists in the DataFrame
+            if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
+                continue  # Skip if already present
+
+            print(f'Retrieving data for: {end_date_str}')
+
+            # Ensure that the transactions before the end date are not empty
+            transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
+            if transactions_before_end.empty:
+                print(f"No transactions found for date: {end_date_str}. Skipping...")
                 continue
+
+            stock_list = list(transactions_before_end["Stock"].unique())
             
-            # Ensure end_date is included in the portfolio_data
-            portfolio_data['end_date'] = end_date_str
+            result = analyzer.calculate_all_stocks_mwr(
+                start_date=start_date.strftime('%Y-%m-%d'), 
+                end_date=end_date_str, 
+                stocks=stock_list
+            )
             
-            # Append the new data to the list
-            portfolio_results_list.append(portfolio_data)
+            for key in result:
+                portfolio_data = result.get(key)
+                
+                # Check if portfolio_data is valid before proceeding
+                if portfolio_data is None or not isinstance(portfolio_data, dict):
+                    print(f"Stock data is missing or invalid for date: {end_date_str}. Result: {result}")
+                    continue
+                
+                # Ensure end_date is included in the portfolio_data
+                portfolio_data['end_date'] = end_date_str
+                
+                # Append the new data to the list
+                portfolio_results_list.append(portfolio_data)
+        except Exception as e:
+            print(f'Failed to retrieve daily data for {end_date}: {e}')
 
     # Combine the list into a DataFrame if there are new results
     if portfolio_results_list:
