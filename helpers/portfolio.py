@@ -43,7 +43,8 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
 
             print(f'Retrieving data for: {end_date_str}')
             
-            transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
+            #transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
+            transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
             stock_list = list(transactions_before_end["Stock"].unique())
             
             result = analyzer.calculate_all_stocks_mwr(
@@ -114,6 +115,10 @@ def calc_daily(analyzer, start_date):
         try:
             # Format end date to string for comparison
             end_date_str = end_date.strftime('%Y-%m-%d')
+
+            # Skip weekends (Saturday and Sunday)
+            if end_date.weekday() >= 5:
+                continue  # Skip this iteration if it's a weekend
             
             # Check if the result for this end date already exists in the DataFrame
             if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
@@ -122,7 +127,8 @@ def calc_daily(analyzer, start_date):
             print(f'Retrieving data for: {end_date_str}')
 
             # Ensure that the transactions before the end date are not empty
-            transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
+            #transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
+            transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
             if transactions_before_end.empty:
                 print(f"No transactions found for date: {end_date_str}. Skipping...")
                 continue
@@ -148,6 +154,7 @@ def calc_daily(analyzer, start_date):
                 
                 # Append the new data to the list
                 portfolio_results_list.append(portfolio_data)
+
         except Exception as e:
             print(f'Failed to retrieve daily data for {end_date}: {e}')
 
