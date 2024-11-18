@@ -8,5 +8,8 @@ data/*.csv
 # Ignore all .pkl files in the data folder
 data/*.pkl 
 
+# Ignore in the uploads
+uploads/*.csv
+
 # Ignore all files in the output folder
 output/*.csv
