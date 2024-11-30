@@ -207,6 +207,7 @@ if tab_selection == "Monthly":
         fig = px.line(filtered_df, x='End Date', y=selected_metric, 
                       title=f"{selected_metric} for {selected_product}", 
                       labels={"end_date": "End Date", selected_metric: selected_metric})
+        fig.update_traces(line_shape='spline')  # Smooth spline interpolation
         fig.update_layout(width=1200, height=500)
         st.plotly_chart(fig, use_container_width=False)
 
@@ -297,6 +298,7 @@ elif tab_selection == "Daily":
         daily_fig = px.line(daily_filtered_df, x='End Date', y=selected_metric, 
                             title=f"{selected_metric} for {selected_product}", 
                             labels={"end_date": "End Date", selected_metric: selected_metric})
+        daily_fig.update_traces(line_shape='spline')  # Smooth spline interpolation
         daily_fig.update_layout(width=1200, height=500)
         st.plotly_chart(daily_fig, use_container_width=False)
     else:
