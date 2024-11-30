@@ -158,37 +158,41 @@ if tab_selection == "Monthly":
 
     # Top level metrics
     if not filtered_df.empty:
+
         # Top current value
-        top_current_value_start = filtered_df.iloc[-2]['Current Value (€)']
-        top_current_value_end = filtered_df.iloc[-1]['Current Value (€)']
+        top_current_value_start = filtered_df.iloc[-2].get('Current Value (€)', 0)
+        top_current_value_end = filtered_df.iloc[-1].get('Current Value (€)', 0)
 
         if top_current_value_start != 0:
             top_current_value_delta = round((top_current_value_end-top_current_value_start), 2)
             top_current_value_delta_eur = f"+€ {abs(top_current_value_delta)}" if top_current_value_delta > 0 else f"-€ {abs(top_current_value_delta)}"
             top_current_value_delta_per = round(((top_current_value_end-top_current_value_start)/(top_current_value_start))*100, 2)
         else:
+            top_current_value_delta_eur = 0
             top_current_value_delta_per = 0
 
         # Top current return
-        top_current_return_start = filtered_df.iloc[-2]['Current Money Weighted Return (€)']
-        top_current_return_end = filtered_df.iloc[-1]['Current Money Weighted Return (€)']
+        top_current_return_start = filtered_df.iloc[-2].get('Current Money Weighted Return (€)', 0)
+        top_current_return_end = filtered_df.iloc[-1].get('Current Money Weighted Return (€)', 0)
 
         if top_current_return_start != 0:
             top_current_return_delta = round((top_current_return_end-top_current_return_start), 2)
             top_current_return_delta_eur = f"+€ {abs(top_current_return_delta)}" if top_current_return_delta > 0 else f"-€ {abs(top_current_return_delta)}"
             top_current_return_delta_per = round(((top_current_return_end-top_current_return_start)/(top_current_return_start))*100, 2)
         else:
+            top_current_return_delta_eur = 0
             top_current_return_delta_per = 0
 
         # Top net return
-        top_net_return_start = filtered_df.iloc[-2]['Net Return (€)']
-        top_net_return_end = filtered_df.iloc[-1]['Net Return (€)']
+        top_net_return_start = filtered_df.iloc[-2].get('Net Return (€)', 0)
+        top_net_return_end = filtered_df.iloc[-1].get('Net Return (€)', 0)
 
         if top_net_return_start != 0:
             top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
             top_net_return_delta_eur = f"+€ {abs(top_net_return_delta)}" if top_net_return_delta > 0 else f"-€ {abs(top_net_return_delta)}"
             top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/(top_net_return_start))*100, 2)
         else:
+            top_current_delta_eur = 0
             top_net_return_delta_per = 0
 
         col1, col2, col3 = st.columns(3)
@@ -250,36 +254,39 @@ elif tab_selection == "Daily":
     # Top level metrics
     if not daily_filtered_df.empty:
         # Top current value
-        top_current_value_start = daily_filtered_df.iloc[-2]['Current Value (€)']
-        top_current_value_end = daily_filtered_df.iloc[-1]['Current Value (€)']
+        top_current_value_start = daily_filtered_df.iloc[-2].get('Current Value (€)', 0)
+        top_current_value_end = daily_filtered_df.iloc[-1].get('Current Value (€)', 0)
 
         if top_current_value_start != 0:
             top_current_value_delta = round((top_current_value_end-top_current_value_start), 2)
             top_current_value_delta_eur = f"+€ {abs(top_current_value_delta)}" if top_current_value_delta > 0 else f"-€ {abs(top_current_value_delta)}"
             top_current_value_delta_per = round(((top_current_value_end-top_current_value_start)/(top_current_value_start))*100, 2)
         else:
+            top_current_value_delta_eur = 0
             top_current_value_delta_per = 0
 
         # Top current return
-        top_current_return_start = daily_filtered_df.iloc[-2]['Current Money Weighted Return (€)']
-        top_current_return_end = daily_filtered_df.iloc[-1]['Current Money Weighted Return (€)']
+        top_current_return_start = daily_filtered_df.iloc[-2].get('Current Money Weighted Return (€)', 0)
+        top_current_return_end = daily_filtered_df.iloc[-1].get('Current Money Weighted Return (€)', 0)
 
         if top_current_return_start != 0:
             top_current_return_delta = round((top_current_return_end-top_current_return_start), 2)
             top_current_return_delta_eur = f"+€ {abs(top_current_return_delta)}" if top_current_return_delta > 0 else f"-€ {abs(top_current_return_delta)}"
             top_current_return_delta_per = round(((top_current_return_end-top_current_return_start)/(top_current_return_start))*100, 2)
         else:
+            top_current_return_delta_eur = 0
             top_current_return_delta_per = 0
 
         # Top net return
-        top_net_return_start = daily_filtered_df.iloc[-2]['Net Return (€)']
-        top_net_return_end = daily_filtered_df.iloc[-1]['Net Return (€)']
+        top_net_return_start = daily_filtered_df.iloc[-2].get('Net Return (€)', 0)
+        top_net_return_end = daily_filtered_df.iloc[-1].get('Net Return (€)', 0)
 
         if top_net_return_start != 0:
             top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
             top_net_return_delta_eur = f"+€ {abs(top_net_return_delta)}" if top_net_return_delta > 0 else f"-€ {abs(top_net_return_delta)}"
             top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/(top_net_return_start))*100, 2)
         else:
+            top_net_return_delta_eur = 0
             top_net_return_delta_per = 0
 
         col1, col2, col3 = st.columns(3)
