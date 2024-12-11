@@ -10,4 +10,4 @@ analyzer = PortfolioAnalyzer(transactions)
 calc_monthly(analyzer)
 
 # Daily
-calc_daily(analyzer, '2024-08-01')
+calc_daily(analyzer, '2023-12-01')

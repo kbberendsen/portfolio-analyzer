@@ -254,7 +254,7 @@ elif tab_selection == "Daily":
         #daily_min_date = daily_df['Start Date'].min().to_pydatetime()
         daily_max_date = daily_df['End Date'].max().to_pydatetime()
         # Subtract 3 months from the max date
-        daily_min_date = daily_max_date - timedelta(days=90)
+        daily_min_date = daily_max_date - timedelta(days=365)
 
         # Set the default range to the last 30 days
         default_start_date = daily_max_date - timedelta(days=30)
@@ -358,7 +358,7 @@ elif tab_selection == "Daily":
             selected_metric_delta = f'{top_selected_metric_delta}'
 
         # Display top metric (selected)
-        if 'Net' in selected_metric:
+        if ('Net' in selected_metric) and (str(datetime.now().year) in str(selected_end_date)):
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric(label=selected_metric, value=f"€ {top_selected_metric_end}", delta=f"{top_selected_metric_delta_per} % | {top_selected_metric_delta_eur}")
