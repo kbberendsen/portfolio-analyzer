@@ -6,7 +6,10 @@
 data/*.csv
 
 # Ignore all .pkl files in the data folder
-data/*.pkl 
+data/*.pkl
+
+# Ignore data backup
+data-backup/
 
 # Ignore in the uploads
 uploads/*.csv
