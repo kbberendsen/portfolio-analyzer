@@ -361,9 +361,12 @@ elif tab_selection == "Daily":
         if ('Net' in selected_metric) and (str(datetime.now().year) in str(selected_end_date)):
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric(label=selected_metric, value=f"€ {top_selected_metric_end}", delta=f"{top_selected_metric_delta_per} % | {top_selected_metric_delta_eur}")
+                st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta)
             with col2:
-                st.metric(label="Net Return YTD", value=f" € {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %")
+                if selected_metric == 'Net Performance (%)':
+                    st.metric(label="YTD - Net Performance (%)", value=f"{top_net_return_ytd_delta_per} %", delta=f"€ {top_net_return_ytd_delta_eur}")
+                else:
+                    st.metric(label="YTD - Net Return (€)", value=f" € {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %")
             with col3:
                 pass
         else:
