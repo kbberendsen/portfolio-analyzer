@@ -14,6 +14,12 @@ st.title("Stock Portfolio Dashboard")
 # Placeholder for the loading spinner while refreshing data on startup
 loading_placeholder = st.empty()
 
+uploaded_file = None
+
+# Define startup refresh state variable
+if "startup_refresh" not in st.session_state:
+    st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
+
 def check_columns(uploaded_df):
     # Define the expected columns for the transaction data
     required_columns = ['Datum', 'ISIN', 'Beurs', 'Aantal', 'Koers', 'Waarde', 'Transactiekosten en/of']
@@ -59,7 +65,8 @@ def refresh_data():
     # Run the 'main.py' script to update the CSV
     try:
         subprocess.run(['python', 'main.py'], check=True)
-        st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
+        if st.session_state.startup_refresh:
+            st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
     except subprocess.CalledProcessError as e:
         st.error(f"Error occurred while refreshing data: {e}")
 
@@ -77,11 +84,7 @@ def clear_cache():
 
     st.info("Data cleared. Use 'Refresh Data' to update data. This will take a few mintues.")
 
-uploaded_file = None
-
-# Run refresh_data on the first load
-if "startup_refresh" not in st.session_state:
-    st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
+# Startup loading spinner
 if not st.session_state.startup_refresh:
     with loading_placeholder.container():
         with st.spinner("Loading data..."):
@@ -126,7 +129,7 @@ daily_df['End Date'] = daily_df['End Date'].apply(lambda x: datetime.strptime(x,
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:
     # Tabs for Daily and Monthly data
-    tab_selection = st.radio(label="Select Data View", options=["Monthly", "Daily"])
+    tab_selection = st.radio(label="Select Data View", options=["Daily", "Monthly"])
 
     # Sort product options
     product_options = sorted(df['Product'].unique().tolist())
