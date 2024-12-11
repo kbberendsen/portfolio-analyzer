@@ -9,7 +9,10 @@ import os
 # Set the page title for the browser tab
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:")
 
-st.title("Stock Portfolio Dashboard") 
+st.title("Stock Portfolio Dashboard")
+
+# Placeholder for the loading spinner while refreshing data on startup
+loading_placeholder = st.empty()
 
 def check_columns(uploaded_df):
     # Define the expected columns for the transaction data
@@ -75,6 +78,18 @@ def clear_cache():
     st.info("Data cleared. Use 'Refresh Data' to update data. This will take a few mintues.")
 
 uploaded_file = None
+
+# Run refresh_data on the first load
+if "startup_refresh" not in st.session_state:
+    st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
+if not st.session_state.startup_refresh:
+    with loading_placeholder.container():
+        with st.spinner("Loading data..."):
+            refresh_data()
+            st.session_state.startup_refresh = True  # Mark that refresh has run
+
+# Clear the placeholder once the data is ready
+loading_placeholder.empty()
 
 # Dictionary to rename the performance metrics columns for display purposes
 rename_dict = {
@@ -197,11 +212,11 @@ if tab_selection == "Monthly":
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric(label="Last Month Current Value", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per}% ({top_current_value_delta_eur})")
+            st.metric(label="Last Month Current Value", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per} % | {top_current_value_delta_eur}")
         with col2:
-            st.metric(label="Last Month Current Return", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per}% ({top_current_return_delta_eur})")
+            st.metric(label="Last Month Current Return", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per} % | {top_current_return_delta_eur}")
         with col3:
-            st.metric(label="Last Month Net Return", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per}% ({top_net_return_delta_eur})")
+            st.metric(label="Last Month Net Return", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per} % | {top_net_return_delta_eur}")
 
         st.divider()
 
@@ -227,6 +242,7 @@ elif tab_selection == "Daily":
     st.header(f"{selected_product} - Daily")
  
     # Filter on product
+    product_df = df[df['Product'] == selected_product]
     daily_product_df = daily_df[daily_df['Product'] == selected_product]
 
     with st.sidebar:
@@ -292,17 +308,65 @@ elif tab_selection == "Daily":
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric(label="Last Day Current Value", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per}% ({top_current_value_delta_eur})")
+            st.metric(label="Current Value on Last Day", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per} % | {top_current_value_delta_eur}")
         with col2:
-            st.metric(label="Last Day Current Return", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per}% ({top_current_return_delta_eur})")
+            st.metric(label="Current Return on Last Day", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per} % | {top_current_return_delta_eur}")
         with col3:
-            st.metric(label="Last Day Net Return", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per}% ({top_net_return_delta_eur})")
-
+            st.metric(label="Net Return on Last Day", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per} % | {top_net_return_delta_eur}")
+        
         st.divider()
     
     # Plot performance over time
     if not daily_filtered_df.empty:
         st.subheader(f"{selected_metric} for {selected_product}")
+
+        # Top metric (selected)
+        top_selected_metric_start = daily_filtered_df.iloc[-2].get(selected_metric, 0)
+        top_selected_metric_end = daily_filtered_df.iloc[-1].get(selected_metric, 0)
+
+        if top_selected_metric_start != 0:
+            top_selected_metric_delta = round((top_selected_metric_end-top_selected_metric_start), 2)
+            top_selected_metric_delta_eur = f"+€ {abs(top_selected_metric_delta)}" if top_selected_metric_delta > 0 else f"-€ {abs(top_selected_metric_delta)}"
+            top_selected_metric_delta_per = round(((top_selected_metric_end-top_selected_metric_start)/(top_selected_metric_start))*100, 2)
+        else:
+            top_selected_metric_delta_eur = 0
+            top_selected_metric_delta_per = 0
+
+        # Top net return YTD
+        top_net_return_ytd_start = product_df[product_df['End Date']==f'{datetime.now().year}-01-01 00:00:00'].iloc[0].get('Net Return (€)', 0)
+        top_total_cost_ytd_start = product_df[product_df['End Date']==f'{datetime.now().year}-01-01 00:00:00'].iloc[0].get('Total Cost (€)', 0)
+
+        if top_total_cost_ytd_start != 0:
+            top_net_return_ytd_delta_eur = round((top_net_return_end-top_net_return_ytd_start), 2)
+            top_net_return_ytd_delta_per = round(((top_net_return_end-top_net_return_ytd_start)/abs(top_total_cost_ytd_start))*100, 2)
+        else:
+            top_net_return_ytd_delta_eur = 0
+            top_net_return_ytd_delta_per = 0
+        
+        # Adjust displayed string based on metric type
+        if '€' in selected_metric:
+            selected_metric_value = f'€ {top_selected_metric_end}'
+            selected_metric_delta = f'{top_selected_metric_delta_per} % | {top_selected_metric_delta_eur}'
+        elif '%' in selected_metric:
+            selected_metric_value = f'{top_selected_metric_end} %'
+            selected_metric_delta = f'{top_selected_metric_delta} %p'
+        else:
+            selected_metric_value = top_selected_metric_end
+            selected_metric_delta = f'{top_selected_metric_delta}'
+
+        # Display top metric (selected)
+        if 'Net' in selected_metric:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric(label=selected_metric, value=f"€ {top_selected_metric_end}", delta=f"{top_selected_metric_delta_per} % | {top_selected_metric_delta_eur}")
+            with col2:
+                st.metric(label="Net Return YTD", value=f" € {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %")
+            with col3:
+                pass
+        else:
+            st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta)
+
+        # Plot
         daily_fig = px.line(daily_filtered_df, x='End Date', y=selected_metric, 
                             title=f"{selected_metric} for {selected_product}", 
                             labels={"end_date": "End Date", selected_metric: selected_metric})
@@ -325,14 +389,18 @@ with st.sidebar:
     if st.button('Refresh Data'):
         refresh_data()
 
-    # Initialize the session state for startup refresh
-    if "startup_refresh" not in st.session_state:
-        st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
+    # # Initialize the session state for startup refresh
+    # if "startup_refresh" not in st.session_state:
+    #     st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
 
-    # Only run refresh_data on the first load
-    if not st.session_state.startup_refresh:
-        refresh_data()
-        st.session_state.startup_refresh = True  # Mark that refresh has run
+    # # Only run refresh_data on the first load
+    # if not st.session_state.startup_refresh:
+    #     with loading_placeholder.container():
+    #         with st.spinner("Loading data..."):
+    #             refresh_data()
+    #             st.session_state.startup_refresh = True  # Mark that refresh has run
+    #     # Clear the placeholder once the data is ready
+    #     loading_placeholder.empty()
     
     if st.button('Clear Cached Data', type="primary"):
         clear_cache()
