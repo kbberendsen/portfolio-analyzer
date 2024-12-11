@@ -256,10 +256,10 @@ elif tab_selection == "Daily":
         # Subtract 3 months from the max date
         daily_min_date = daily_max_date - timedelta(days=365)
 
-        # Set the default range to the last 30 days
-        default_start_date = daily_max_date - timedelta(days=30)
+        # Set the default range to the last 90 days
+        default_start_date = daily_max_date - timedelta(days=90)
         
-        # Create the slider with the full date range but defaulting to the last 30 days
+        # Create the slider with the full date range but defaulting to the last 90 days
         selected_start_date, selected_end_date = st.slider(
             "Select Date Range",
             min_value=daily_min_date,
