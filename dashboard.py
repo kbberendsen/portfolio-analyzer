@@ -355,16 +355,14 @@ elif tab_selection == "Daily":
             else 0
         )
 
-        print(top_net_return_ytd_start)
-        print(top_total_cost_ytd_start)
-        print(top_net_return_end)
+        top_total_cost_end = daily_filtered_df.iloc[-1].get('Total Cost (€)', 0)
 
         #top_net_return_ytd_start = product_df[product_df['End Date']==f'{datetime.now().year}-01-01 00:00:00'].iloc[0].get('Net Return (€)', 0)
         #top_total_cost_ytd_start = product_df[product_df['End Date']==f'{datetime.now().year}-01-01 00:00:00'].iloc[0].get('Total Cost (€)', 0)
 
         if top_total_cost_ytd_start != 0:
             top_net_return_ytd_delta_eur = round((top_net_return_end-top_net_return_ytd_start), 2)
-            top_net_return_ytd_delta_per = round(((top_net_return_end-top_net_return_ytd_start)/abs(top_total_cost_ytd_start))*100, 2)
+            top_net_return_ytd_delta_per = round(((top_net_return_end-top_net_return_ytd_start)/abs(top_total_cost_end))*100, 2)
         else:
             top_net_return_ytd_delta_eur = 0
             top_net_return_ytd_delta_per = 0
