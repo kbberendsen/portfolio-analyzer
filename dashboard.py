@@ -394,19 +394,6 @@ with st.sidebar:
     # Refresh Button to update the CSV
     if st.button('Refresh Data'):
         refresh_data()
-
-    # # Initialize the session state for startup refresh
-    # if "startup_refresh" not in st.session_state:
-    #     st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
-
-    # # Only run refresh_data on the first load
-    # if not st.session_state.startup_refresh:
-    #     with loading_placeholder.container():
-    #         with st.spinner("Loading data..."):
-    #             refresh_data()
-    #             st.session_state.startup_refresh = True  # Mark that refresh has run
-    #     # Clear the placeholder once the data is ready
-    #     loading_placeholder.empty()
     
     if st.button('Clear Cached Data', type="primary"):
         clear_cache()
