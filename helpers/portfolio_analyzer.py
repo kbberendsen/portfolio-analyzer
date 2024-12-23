@@ -45,7 +45,7 @@ class PortfolioAnalyzer:
         
         # Average cost
         if not all_transactions.empty:
-            quantity_bought = all_transactions[(all_transactions['Action'].isin(['BUY'])) & all_transactions['Quantity']>0]['Quantity'].sum()
+            quantity_bought = all_transactions[(all_transactions['Action'].isin(['BUY'])) & (all_transactions['Quantity']>0)]['Quantity'].sum()
             avg_cost = -1 * (all_transactions[all_transactions['Action'].isin(['BUY'])]['Cost'].sum() / quantity_bought)
 
         # Initialize variables to track
