@@ -2,6 +2,7 @@ import os
 from datetime import datetime, date, timedelta
 import pandas as pd
 from helpers.transactions import transactions
+import time
 
 def calc_monthly(analyzer, start_date='2020-10-01'):
     # Set fixed start date
@@ -69,6 +70,8 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
                 print("Waiting for 10 seconds to prevent API call errors...")
                 time.sleep(10)
 
+            time.sleep(2)
+
         except Exception as e:
             print(f'Failed to retrieve monthly data for {end_date}: {e}')
             continue
@@ -118,6 +121,7 @@ def calc_daily(analyzer, start_date):
                                                     'net_performance_percentage'])
 
     # Loop over each end date, calculate portfolio results, and add to the list
+    counter = 0
     for end_date in end_dates:
         # Try to get end_date data, else continue
         try:
@@ -162,6 +166,14 @@ def calc_daily(analyzer, start_date):
                 
                 # Append the new data to the list
                 portfolio_results_list.append(portfolio_data)
+
+            # Increment counter and wait every 10 iterations
+            counter += 1
+            if counter % 10 == 0:
+                print("Waiting for 10 seconds to prevent API call errors...")
+                time.sleep(10)
+
+            time.sleep(2)
 
         except Exception as e:
             print(f'Failed to retrieve daily data for {end_date}: {e}')
