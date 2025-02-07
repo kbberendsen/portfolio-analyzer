@@ -32,6 +32,7 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
 
 
     # Loop over each end date, calculate portfolio results, and add to the list
+    counter = 0
     for end_date in end_dates:
         try:
             # Format end date to string for comparison
@@ -61,6 +62,13 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
                 
                 # Append the new data to the list
                 portfolio_results_list.append(portfolio_data)
+
+            # Increment counter and wait every 10 iterations
+            counter += 1
+            if counter % 10 == 0:
+                print("Waiting for 10 seconds to prevent API call errors...")
+                time.sleep(10)
+
         except Exception as e:
             print(f'Failed to retrieve monthly data for {end_date}: {e}')
             continue
