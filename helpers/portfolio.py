@@ -35,6 +35,7 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
     # Loop over each end date, calculate portfolio results, and add to the list
     counter = 0
     for end_date in end_dates:
+
         try:
             # Format end date to string for comparison
             end_date_str = end_date.strftime('%Y-%m-%d')
@@ -49,6 +50,20 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
             transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
             stock_list = list(transactions_before_end["Stock"].unique())
             
+            # Retrieve stock results
+            
+            # Max 50 dates per refresh
+            counter+=1
+            if counter == 50:
+                print("Max of 50 dates refreshed. Exiting refresh...")
+                break
+            
+            # Increment counter and wait every 10 iterations
+            if counter % 10 == 0:
+                print("Waiting for 10 seconds to prevent API call errors...")
+                time.sleep(10)
+
+            time.sleep(1)
             result = analyzer.calculate_all_stocks_mwr(
                 start_date=start_date.strftime('%Y-%m-%d'), 
                 end_date=end_date_str, 
@@ -63,14 +78,6 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
                 
                 # Append the new data to the list
                 portfolio_results_list.append(portfolio_data)
-
-            # Increment counter and wait every 10 iterations
-            counter += 1
-            if counter % 10 == 0:
-                print("Waiting for 10 seconds to prevent API call errors...")
-                time.sleep(10)
-
-            time.sleep(2)
 
         except Exception as e:
             print(f'Failed to retrieve monthly data for {end_date}: {e}')
@@ -94,7 +101,7 @@ def calc_daily(analyzer, start_date):
     # Initialize today's date as the end of the loop range
     today = datetime.today()
 
-    # Generate list of end dates for the first day of each month from start date to today
+    # Generate list of daily end dates from start date to today
     end_dates = pd.date_range(start=start_date, end=today, freq='D')[1:]  # Exclude the start_date itself
 
     # Initialize an empty list to store portfolio data for each month
@@ -123,8 +130,10 @@ def calc_daily(analyzer, start_date):
     # Loop over each end date, calculate portfolio results, and add to the list
     counter = 0
     for end_date in end_dates:
+
         # Try to get end_date data, else continue
         try:
+
             # Format end date to string for comparison
             end_date_str = end_date.strftime('%Y-%m-%d')
 
@@ -146,7 +155,20 @@ def calc_daily(analyzer, start_date):
                 continue
 
             stock_list = list(transactions_before_end["Stock"].unique())
+
+            # Retrieve stock results
             
+            # Max 50 dates per refresh
+            counter+=1
+            if counter == 50:
+                print("Max of 50 dates refreshed. Exiting refresh...")
+                break
+            
+            if counter % 10 == 0:
+                print("Waiting for 10 seconds to prevent API call errors...")
+                time.sleep(10)
+            
+            time.sleep(1)
             result = analyzer.calculate_all_stocks_mwr(
                 start_date=start_date.strftime('%Y-%m-%d'), 
                 end_date=end_date_str, 
@@ -166,14 +188,6 @@ def calc_daily(analyzer, start_date):
                 
                 # Append the new data to the list
                 portfolio_results_list.append(portfolio_data)
-
-            # Increment counter and wait every 10 iterations
-            counter += 1
-            if counter % 10 == 0:
-                print("Waiting for 10 seconds to prevent API call errors...")
-                time.sleep(10)
-
-            time.sleep(2)
 
         except Exception as e:
             print(f'Failed to retrieve daily data for {end_date}: {e}')

@@ -82,7 +82,7 @@ def clear_cache():
         os.remove(cache_path_daily)
         print(f"{cache_path_daily} has been deleted.")
 
-    st.info("Data cleared. Use 'Refresh Data' to update data. This will take a few mintues.")
+    st.info("Data cleared. Use 'Refresh Data' to update data. This will take a few minutes.")
 
 # Startup loading spinner
 if not st.session_state.startup_refresh:
