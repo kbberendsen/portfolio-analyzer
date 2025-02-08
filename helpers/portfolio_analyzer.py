@@ -7,6 +7,8 @@ class PortfolioAnalyzer:
     def __init__(self, transactions):
         """Initialize with transaction data (pandas DataFrame)."""
         self.transactions = transactions
+        # Sort transactions chronologically
+        self.transactions = self.transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
 
     def get_price_at_date(self, stock, date):
         """Fetches end-of-day stock price for a specific date using yfinance."""
@@ -26,9 +28,6 @@ class PortfolioAnalyzer:
     
     def calculate_mwr(self, stock, start_date, end_date=date.today().strftime('%Y-%m-%d')):
         """Calculate Money Weighted Return using individual performance tracking for each transaction."""
-
-        # Sort transactions chronologically
-        self.transactions = self.transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
         
         # Convert dates to datetime format
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
@@ -45,8 +44,9 @@ class PortfolioAnalyzer:
         
         # Average cost
         if not all_transactions.empty:
-            quantity_bought = all_transactions[(all_transactions['Action'].isin(['BUY'])) & (all_transactions['Quantity']>0)]['Quantity'].sum()
-            avg_cost = -1 * (all_transactions[all_transactions['Action'].isin(['BUY'])]['Cost'].sum() / quantity_bought)
+            buys = all_transactions[all_transactions['Action'] == 'BUY']
+            quantity_bought = buys['Quantity'].sum()
+            avg_cost = -1 * (buys['Cost'].sum() / quantity_bought) if quantity_bought > 0 else 0
 
         # Initialize variables to track
         realized_return = 0
@@ -120,7 +120,6 @@ class PortfolioAnalyzer:
 
         # Initialize accumulators for the metrics
         quantity = 0
-        purchase_cost = 0
         purchase_cost = 0
         current_value = 0
         current_return = 0

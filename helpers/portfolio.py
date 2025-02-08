@@ -5,6 +5,8 @@ from helpers.transactions import transactions
 import time
 
 def calc_monthly(analyzer, start_date='2020-10-01'):
+    print('Retrieving monthly data...')
+
     # Set fixed start date
     start_date = datetime.strptime(start_date, '%Y-%m-%d')
     # Initialize today's date as the end of the loop range
@@ -35,7 +37,6 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
     # Loop over each end date, calculate portfolio results, and add to the list
     counter = 0
     for end_date in end_dates:
-
         try:
             # Format end date to string for comparison
             end_date_str = end_date.strftime('%Y-%m-%d')
@@ -46,23 +47,16 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
 
             print(f'Retrieving data for: {end_date_str}')
             
-            #transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
             transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
             stock_list = list(transactions_before_end["Stock"].unique())
-            
-            # Retrieve stock results
             
             # Max 50 dates per refresh
             counter+=1
             if counter == 50:
                 print("Max of 50 dates refreshed. Exiting refresh...")
                 break
-            
-            # Increment counter and wait every 10 iterations
-            if counter % 10 == 0:
-                print("Waiting for 10 seconds to prevent API call errors...")
-                time.sleep(10)
 
+            # Retrieve stock results using analyzer class
             time.sleep(1)
             result = analyzer.calculate_all_stocks_mwr(
                 start_date=start_date.strftime('%Y-%m-%d'), 
@@ -96,6 +90,8 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
     print('Monthly output saved')
 
 def calc_daily(analyzer, start_date):
+    print('Retrieving daily data...')
+
     # Set fixed start date
     start_date = datetime.strptime(start_date, '%Y-%m-%d')
     # Initialize today's date as the end of the loop range
@@ -115,9 +111,9 @@ def calc_daily(analyzer, start_date):
         portfolio_results_df = pd.read_pickle(cache_file_path)
         print('Daily file found')
 
-        # Remove last 3 days to force refresh (get end of day data)
-        last_3_days = sorted(portfolio_results_df['end_date'].unique())[-3:]
-        portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_3_days)]
+        # Remove last 2 days to force refresh (get end of day data)
+        last_2_days = sorted(portfolio_results_df['end_date'].unique())[-2:]
+        portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
 
     except (FileNotFoundError, pd.errors.EmptyDataError):
         # Start with an empty DataFrame if the file doesn't exist
@@ -130,10 +126,8 @@ def calc_daily(analyzer, start_date):
     # Loop over each end date, calculate portfolio results, and add to the list
     counter = 0
     for end_date in end_dates:
-
         # Try to get end_date data, else continue
         try:
-
             # Format end date to string for comparison
             end_date_str = end_date.strftime('%Y-%m-%d')
 
@@ -148,15 +142,12 @@ def calc_daily(analyzer, start_date):
             print(f'Retrieving data for: {end_date_str}')
 
             # Ensure that the transactions before the end date are not empty
-            #transactions_before_end = transactions[(transactions["Date"] <= end_date_str)]
             transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
             if transactions_before_end.empty:
                 print(f"No transactions found for date: {end_date_str}. Skipping...")
                 continue
 
             stock_list = list(transactions_before_end["Stock"].unique())
-
-            # Retrieve stock results
             
             # Max 50 dates per refresh
             counter+=1
@@ -164,10 +155,7 @@ def calc_daily(analyzer, start_date):
                 print("Max of 50 dates refreshed. Exiting refresh...")
                 break
             
-            if counter % 10 == 0:
-                print("Waiting for 10 seconds to prevent API call errors...")
-                time.sleep(10)
-            
+            # Retrieve stock results using analyzer class
             time.sleep(1)
             result = analyzer.calculate_all_stocks_mwr(
                 start_date=start_date.strftime('%Y-%m-%d'), 
