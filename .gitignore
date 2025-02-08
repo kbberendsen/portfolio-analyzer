@@ -1,6 +1,8 @@
 *.pyc
 *.out
 *.txt
+test.py
+test.ipynb
 
 # Ignore all files in the output folder
 data/*.csv

@@ -28,7 +28,7 @@ class PortfolioAnalyzer:
         """Calculate Money Weighted Return using individual performance tracking for each transaction."""
 
         # Sort transactions chronologically
-        self.transactions = self.transactions.sort_values(by="Date").reset_index(drop=True)
+        self.transactions = self.transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
         
         # Convert dates to datetime format
         start_date = datetime.strptime(start_date, '%Y-%m-%d')

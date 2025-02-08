@@ -9,7 +9,7 @@ def get_price_at_date(stock, date):
     # Return the closing price for the specified date
     return float(history['Close'].iloc[0]) if not history.empty else None
 
-day_1 = get_price_at_date('2B7K.DE', '2024-11-11')
-day_2 = get_price_at_date('2B7K.DE', '2024-11-12')
+day_1 = get_price_at_date('XYZ', '2020-11-11')
+day_2 = get_price_at_date('XYZ', '2024-11-12')
 print(day_1)
 print(day_2)

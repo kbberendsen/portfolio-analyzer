@@ -13,8 +13,9 @@ def process_transactions(file_path):
         df = pd.read_csv(file_path)
         
         # Select and rename the columns
-        df_adj = df[['Datum', 'ISIN', 'Beurs', 'Aantal', 'Koers', 'Waarde', 'Transactiekosten en/of']].rename(columns={
+        df_adj = df[['Datum', 'Tijd', 'ISIN', 'Beurs', 'Aantal', 'Koers', 'Waarde', 'Transactiekosten en/of']].rename(columns={
             'Datum': 'Date',
+            'Tijd': 'Time',
             'ISIN': 'ISIN',
             'Beurs': 'Exchange',
             'Aantal': 'Quantity',
@@ -37,6 +38,9 @@ def process_transactions(file_path):
         
         # Convert the Date column to the desired format
         df_adj['Date'] = pd.to_datetime(df_adj['Date'], format='%d-%m-%Y')
+
+        # Convert the Time column to the desired format (HH:MM)
+        df_adj['Time'] = pd.to_datetime(df_adj['Time'], format='%H:%M').dt.time
         
         # Fill NA in transaction costs
         df_adj['Transaction_costs'] = df_adj['Transaction_costs'].fillna(0)
