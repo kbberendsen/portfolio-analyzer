@@ -62,3 +62,6 @@ else:
     print(f'Processing fallback: {default_file_path}')
     # If the file is not uploaded, use the default file
     transactions = process_transactions(default_file_path)
+
+# Sort transactions chronologically
+transactions = transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)

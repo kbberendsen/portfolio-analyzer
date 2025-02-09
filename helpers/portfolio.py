@@ -32,50 +32,58 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
                                                     'total_cost', 'current_value', 'current_money_weighted_return', 
                                                     'realized_return', 'net_return', 'current_performance_percentage', 
                                                     'net_performance_percentage'])
+        
+        
+    transactions["Date"] = pd.to_datetime(transactions["Date"])
+    stock_list = list(transactions["Stock"].unique())
 
+    # Get the first day of the current month
+    first_day_current_month = pd.to_datetime(today).replace(day=1)
+    first_day_current_month = first_day_current_month.strftime('%Y-%m-%d')
 
-    # Loop over each end date, calculate portfolio results, and add to the list
-    counter = 0
-    for end_date in end_dates:
-        try:
-            # Format end date to string for comparison
-            end_date_str = end_date.strftime('%Y-%m-%d')
+    # Check if the first day of the current month already exists in portfolio data
+    if first_day_current_month in portfolio_results_df['end_date'].unique():
+        print(f"Data for {first_day_current_month} already exists. Skipping stock price retrieval.")
+    else:
+        # Get stock price data for new end_dates
+        stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d'))
 
-            # Check if the result for this end date already exists in the DataFrame
-            if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
-                continue  # Skip if already present
+        # Loop over each end date, calculate portfolio results, and add to the list
+        for end_date in end_dates:
+            try:
+                # Format end date to string for comparison
+                end_date_str = end_date.strftime('%Y-%m-%d')
 
-            print(f'Retrieving data for: {end_date_str}')
-            
-            transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
-            stock_list = list(transactions_before_end["Stock"].unique())
-            
-            # Max 50 dates per refresh
-            counter+=1
-            if counter == 50:
-                print("Max of 50 dates refreshed. Exiting refresh...")
-                break
+                # Check if the result for this end date already exists in the DataFrame
+                if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
+                    continue  # Skip if already present
 
-            # Retrieve stock results using analyzer class
-            time.sleep(1)
-            result = analyzer.calculate_all_stocks_mwr(
-                start_date=start_date.strftime('%Y-%m-%d'), 
-                end_date=end_date_str, 
-                stocks=stock_list
-            )
-            
-            for key in result:
-                portfolio_data = result.get(key)
+                print(f'Retrieving data for: {end_date_str}')
                 
-                # Ensure end_date is included in the portfolio_data
-                portfolio_data['end_date'] = end_date_str
+                transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
                 
-                # Append the new data to the list
-                portfolio_results_list.append(portfolio_data)
+                stock_list = list(transactions_before_end["Stock"].unique())
 
-        except Exception as e:
-            print(f'Failed to retrieve monthly data for {end_date}: {e}')
-            continue
+                # Retrieve stock results using analyzer class
+                result = analyzer.calculate_all_stocks_mwr(
+                    start_date=start_date.strftime('%Y-%m-%d'), 
+                    end_date=end_date_str, 
+                    stocks=stock_list,
+                    stock_prices=stock_price_data
+                )
+                
+                for key in result:
+                    portfolio_data = result.get(key)
+                    
+                    # Ensure end_date is included in the portfolio_data
+                    portfolio_data['end_date'] = end_date_str
+                    
+                    # Append the new data to the list
+                    portfolio_results_list.append(portfolio_data)
+
+            except Exception as e:
+                print(f'Failed to retrieve monthly data for {end_date}: {e}')
+                continue
 
     # Combine the list into a DataFrame if there are new results
     if portfolio_results_list:
@@ -122,9 +130,14 @@ def calc_daily(analyzer, start_date):
                                                     'current_money_weighted_return', 'realized_return', 
                                                     'net_return', 'current_performance_percentage', 
                                                     'net_performance_percentage'])
+        
+    transactions["Date"] = pd.to_datetime(transactions["Date"])
+
+    # Get stock price data for new end_dates
+    stock_list = transactions["Stock"].unique().tolist() # All stocks
+    stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d'))
 
     # Loop over each end date, calculate portfolio results, and add to the list
-    counter = 0
     for end_date in end_dates:
         # Try to get end_date data, else continue
         try:
@@ -143,24 +156,19 @@ def calc_daily(analyzer, start_date):
 
             # Ensure that the transactions before the end date are not empty
             transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
+
             if transactions_before_end.empty:
                 print(f"No transactions found for date: {end_date_str}. Skipping...")
                 continue
 
             stock_list = list(transactions_before_end["Stock"].unique())
             
-            # Max 50 dates per refresh
-            counter+=1
-            if counter == 50:
-                print("Max of 50 dates refreshed. Exiting refresh...")
-                break
-            
             # Retrieve stock results using analyzer class
-            time.sleep(1)
             result = analyzer.calculate_all_stocks_mwr(
                 start_date=start_date.strftime('%Y-%m-%d'), 
                 end_date=end_date_str, 
-                stocks=stock_list
+                stocks=stock_list,
+                stock_prices=stock_price_data
             )
             
             for key in result:
@@ -179,6 +187,7 @@ def calc_daily(analyzer, start_date):
 
         except Exception as e:
             print(f'Failed to retrieve daily data for {end_date}: {e}')
+            continue
 
     # Combine the list into a DataFrame if there are new results
     if portfolio_results_list:

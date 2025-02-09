@@ -7,15 +7,25 @@ class PortfolioAnalyzer:
     def __init__(self, transactions):
         """Initialize with transaction data (pandas DataFrame)."""
         self.transactions = transactions
-        # Sort transactions chronologically
-        self.transactions = self.transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
 
-    def get_price_at_date(self, stock, date):
-        """Fetches end-of-day stock price for a specific date using yfinance."""
-        stock_data = yf.Ticker(stock)
-        history = stock_data.history(period="1d", start=datetime.strptime(date, '%Y-%m-%d'))
-        # Return the closing price for the specified date
-        return float(history['Close'].iloc[0]) if not history.empty else None
+    def get_price_at_date(self, tickers, start, end):
+        # Convert string dates to datetime
+        start = datetime.strptime(start, '%Y-%m-%d')
+        end = datetime.strptime(end, '%Y-%m-%d')
+
+        # Download stock data
+        stock_data = yf.download(tickers, start=start, end=end, interval="1d")["Close"]
+
+        # Convert timestamps to date strings
+        if isinstance(stock_data, pd.Series):  # Single stock case
+            stock_prices_str = {date.strftime('%Y-%m-%d'): price for date, price in stock_data.items()}
+        else:  # Multiple stocks case
+            stock_prices_str = {
+                stock: {date.strftime('%Y-%m-%d'): price for date, price in prices.items()}
+                for stock, prices in stock_data.to_dict().items()
+            }
+
+        return stock_prices_str
 
     def get_first_last_open_day(self, stock, start_date, end_date, first=True):
         """Fetches the first or last open market day within a given date range."""
@@ -26,7 +36,7 @@ class PortfolioAnalyzer:
         else:
             return history.index[-1].strftime('%Y-%m-%d') if not history.empty else end_date
     
-    def calculate_mwr(self, stock, start_date, end_date=date.today().strftime('%Y-%m-%d')):
+    def calculate_mwr(self, stock, start_date, end_date=date.today().strftime('%Y-%m-%d'), stock_price_data=None):
         """Calculate Money Weighted Return using individual performance tracking for each transaction."""
         
         # Convert dates to datetime format
@@ -83,8 +93,9 @@ class PortfolioAnalyzer:
             end_date_cor = self.get_first_last_open_day(stock, start_date, end_date, first=False)
             end_date_cor = datetime.strptime(end_date_cor, '%Y-%m-%d')
 
-            # Get stock price at end_date for current return calculation
-            end_price = self.get_price_at_date(stock, end_date_cor.strftime('%Y-%m-%d'))
+            # Get stock price from pre-fetched data
+            end_price = stock_price_data.get(str(end_date_cor.strftime('%Y-%m-%d')), 0)
+
             if end_price is None:
                 end_price = 0
 
@@ -161,7 +172,7 @@ class PortfolioAnalyzer:
                 "net_performance_percentage": round(net_performance_percentage, 2)
         }
 
-    def calculate_all_stocks_mwr(self, stocks, start_date, end_date, results=None):
+    def calculate_all_stocks_mwr(self, stocks, start_date, end_date, stock_prices, results=None):
         """Calculate MWR for each stock within the portfolio and full portfolio over the specified period."""
 
         if results is None:
@@ -169,7 +180,7 @@ class PortfolioAnalyzer:
         
         # Each stock
         for stock in stocks:
-            results[stock] = self.calculate_mwr(stock, start_date, end_date)
+            results[stock] = self.calculate_mwr(stock, start_date, end_date, stock_prices[stock])
 
         # Full portfolio
         results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results)
