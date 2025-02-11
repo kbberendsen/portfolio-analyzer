@@ -135,7 +135,7 @@ def calc_daily(analyzer, start_date):
 
     # Get stock price data for new end_dates
     stock_list = transactions["Stock"].unique().tolist() # All stocks
-    stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d'))
+    stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
 
     # Loop over each end date, calculate portfolio results, and add to the list
     for end_date in end_dates:
