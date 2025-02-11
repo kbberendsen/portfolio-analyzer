@@ -251,7 +251,6 @@ elif tab_selection == "Daily":
     with st.sidebar:
 
         # Set the full date range as min and max values for the slider
-        #daily_min_date = daily_df['Start Date'].min().to_pydatetime()
         daily_max_date = daily_df['End Date'].max().to_pydatetime()
         # Subtract 3 months from the max date
         daily_min_date = daily_max_date - timedelta(days=365)

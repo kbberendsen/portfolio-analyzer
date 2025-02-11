@@ -11,7 +11,7 @@ data/*.csv
 data/*.pkl
 
 # Ignore data backup
-data-backup/
+data_backup/
 
 # Ignore in the uploads
 uploads/*.csv
