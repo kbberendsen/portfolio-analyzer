@@ -23,7 +23,7 @@ ticker_to_name = {
     'NQSE.DE': 'ETF - Nasdaq',
     '2B7K.DE': 'ETF - World',
     'PYPL': 'PayPal',
-    'AYEM.DE': 'ETF - Emerging markets',
+    'AYEM.DE': 'ETF - Em. Markets',
     'UIMT.AS': 'ETF - Pacific',
     'IESE.AS': 'ETF - Europe',
     'UIMP.AS': 'ETF - USA',
@@ -35,6 +35,6 @@ ticker_to_name = {
     'GME': 'GameStop',
     'BB.TO': 'BlackBerry',
     'CRM': 'Salesforce Inc.',
-    'PLTR': 'Palantir Technologies',
-    'QDVS.DE': 'ETF - Emerging markets (2)'
+    'PLTR': 'Palantir',
+    'QDVS.DE': 'ETF - Em. Markets (2)'
 }

@@ -46,7 +46,7 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
         print(f"Data for {first_day_current_month} already exists. Skipping stock price retrieval.")
     else:
         # Get stock price data for new end_dates
-        stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d'))
+        stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
 
         # Loop over each end date, calculate portfolio results, and add to the list
         for end_date in end_dates:

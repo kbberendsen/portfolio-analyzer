@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import os
 
 # Set the page title
-st.set_page_config(page_title="Portfolio Analysis", page_icon="📊")
+st.set_page_config(page_title="Portfolio Analysis", page_icon="📊", layout="centered")
 
 st.title("Portfolio Analysis")
 
@@ -82,7 +82,7 @@ if os.path.exists(portfolio_file):
     )
 
     fig.update_layout(
-        title_font_size=24,
+        title_font_size=18,
         xaxis_title_font_size=16,
         font=dict(
             family="Inter, sans-serif",
@@ -99,11 +99,11 @@ if os.path.exists(portfolio_file):
             zeroline=False,
         ),
         bargap=0.3,  # Reduce bar thickness
-        margin=dict(l=0, r=0, t=100, b=50),
-        height=max(500, len(portfolio_split) * 50),  # Responsive height
+        margin=dict(l=0, r=0, t=50, b=50),
+        height=max(500, len(portfolio_split) * 50)  # Responsive height
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config={"staticPlot": True})
 
     # Show raw data
     with st.expander("View Portfolio Data"):
