@@ -86,7 +86,8 @@ included_products = st.multiselect(
 filtered_split_df = daily_df_filtered[daily_df_filtered['Product'].isin(included_products)].copy()
 
 # Replace Current Value from CSV and recalculate using most up-to-date stock prices
-filtered_split_df['Current Price (€)'] = filtered_split_df['Ticker'].apply(get_current_stock_price)
+#filtered_split_df['Current Price (€)'] = filtered_split_df['Ticker'].apply(get_current_stock_price)
+filtered_split_df['Current Price (€)'] = filtered_split_df['Current Value (€)'] / filtered_split_df['Quantity']
 filtered_split_df['Current Value (€)'] = filtered_split_df['Current Price (€)'] * filtered_split_df['Quantity']
 
 filtered_split_df['Current Split (%)'] = round((filtered_split_df['Current Value (€)'] / sum(filtered_split_df['Current Value (€)'])) * 100, 2)

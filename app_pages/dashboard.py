@@ -227,11 +227,11 @@ if tab_selection == "Monthly":
     if not filtered_df.empty:
         st.subheader(f"{selected_metric} for {selected_product}")
         fig = px.line(filtered_df, x='End Date', y=selected_metric, 
-                      title=f"{selected_metric} for {selected_product}", 
+                      title="", #f"{selected_metric} for {selected_product}", 
                       labels={"end_date": "End Date", selected_metric: selected_metric})
         fig.update_traces(line_shape='spline')  # Smooth spline interpolation
         fig.update_traces(line_smoothing=0.7)
-        fig.update_layout(width=1200, height=500)
+        fig.update_layout(width=1200, height=500, margin=dict(l=0, r=0, t=50, b=50))
         st.plotly_chart(fig, use_container_width=False)
 
     else:
@@ -384,11 +384,11 @@ elif tab_selection == "Daily":
 
         # Plot
         daily_fig = px.line(daily_filtered_df, x='End Date', y=selected_metric, 
-                            title=f"{selected_metric} for {selected_product}", 
+                            title="", #f"{selected_metric} for {selected_product}", 
                             labels={"end_date": "End Date", selected_metric: selected_metric})
         daily_fig.update_traces(line_shape='spline')  # Smooth spline interpolation
         daily_fig.update_traces(line_smoothing=0.7)
-        daily_fig.update_layout(width=1200, height=500)
+        daily_fig.update_layout(width=1200, height=500, margin=dict(l=0, r=0, t=50, b=50),)
         st.plotly_chart(daily_fig, use_container_width=False)
     else:
         st.write("No data available for the selected product and date range.")
