@@ -350,7 +350,8 @@ elif tab_selection == "Daily":
         )
         
         if top_total_cost_ytd_start != 0:
-            top_net_return_ytd_delta_eur = round((top_net_return_end-top_net_return_ytd_start), 2)
+            top_net_return_ytd_delta = round((top_net_return_end-top_net_return_ytd_start), 2)
+            top_net_return_ytd_delta_eur = f"+€ {abs(top_net_return_ytd_delta)}" if top_net_return_ytd_delta> 0 else f"-€ {abs(top_net_return_ytd_delta)}"
             top_net_return_ytd_delta_per = round(((top_net_return_end-top_net_return_ytd_start)/abs(top_total_cost_ytd_start))*100, 2)
         else:
             top_net_return_ytd_delta_eur = 0
@@ -374,9 +375,9 @@ elif tab_selection == "Daily":
                 st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta)
             with col2:
                 if selected_metric == 'Net Performance (%)':
-                    st.metric(label="YTD - Net Performance (%)", value=f"{top_net_return_ytd_delta_per} %", delta=f"€ {top_net_return_ytd_delta_eur}")
+                    st.metric(label="YTD - Net Performance (%)", value=f"{top_net_return_ytd_delta_per} %", delta=f"{top_net_return_ytd_delta_eur}")
                 else:
-                    st.metric(label="YTD - Net Return (€)", value=f" € {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %")
+                    st.metric(label="YTD - Net Return (€)", value=f" {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %")
             with col3:
                 pass
         else:
