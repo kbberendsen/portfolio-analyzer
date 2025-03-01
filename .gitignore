@@ -1,5 +1,6 @@
 *.pyc
 *.out
+terminal.txt
 test.py
 test.ipynb
 
