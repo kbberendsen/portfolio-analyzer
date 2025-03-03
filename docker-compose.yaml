@@ -1,5 +1,5 @@
 services:
-  portfolio-analyzer-app:
+  app:
     build: .
     container_name: portfolio-analyzer-container
     ports:
