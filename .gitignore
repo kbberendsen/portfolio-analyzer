@@ -1,5 +1,6 @@
 *.pyc
 *.out
+*.env
 terminal.txt
 test.py
 test.ipynb

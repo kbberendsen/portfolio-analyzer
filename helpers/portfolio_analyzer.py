@@ -2,11 +2,23 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, date, timedelta
 from helpers.ticker_mapping import ticker_to_name, isin_to_ticker
+from supabase import create_client, Client
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+print(SUPABASE_URL, SUPABASE_KEY)	
 
 class PortfolioAnalyzer:
-    def __init__(self, transactions):
+    def __init__(self, transactions, supabase_url=SUPABASE_URL, supabase_key=SUPABASE_KEY):
         """Initialize with transaction data (pandas DataFrame)."""
         self.transactions = transactions
+        # Initialize the Supabase client
+        self.supabase: Client = create_client(supabase_url, supabase_key)
 
     def get_price_at_date(self, tickers, start, end):
         # Convert string dates to datetime
@@ -158,7 +170,7 @@ class PortfolioAnalyzer:
         # Return the aggregated portfolio performance metrics
         return {
                 "product": "Full portfolio",
-                "ticker": None,
+                "ticker": "FULL",
                 "quantity": quantity,
                 "start_date": start_date,
                 "end_date": end_date,
@@ -183,6 +195,25 @@ class PortfolioAnalyzer:
             results[stock] = self.calculate_mwr(stock, start_date, end_date, stock_prices[stock])
 
         # Full portfolio
-        results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results)
+        results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results) 
 
         return results
+    
+    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, upsert_keys: list):
+        """
+        Upsert data to Supabase in bulk.
+
+        :param df: DataFrame containing the data to be upserted
+        :param table: Name of the Supabase table to upsert data into
+        """
+        # Convert the entire DataFrame to a list of dictionaries for bulk upsert
+        data = df.to_dict(orient='records')
+        
+        # Perform bulk upsert
+        response = self.supabase.table(table_name).upsert(data).execute()
+
+        # Check response and handle
+        if 'error' in response:
+            print(f"Upsert failed: {response.error_message}")
+        else:
+            print(f"Successfully upserted {len(data)} rows.")
