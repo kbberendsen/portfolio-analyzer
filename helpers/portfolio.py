@@ -199,6 +199,7 @@ def calc_daily(analyzer, database, start_date):
     portfolio_results_df.to_pickle(cache_file_path)
     portfolio_results_df.to_csv(os.path.join('output', 'portfolio_daily.csv'), index=False)
 
+    #print(portfolio_results_df.tail(40))
     # Upsert to Supabase
     database.upsert_to_supabase(portfolio_results_df, 'portfolio_performance_daily', ['ticker', 'end_date'])
 

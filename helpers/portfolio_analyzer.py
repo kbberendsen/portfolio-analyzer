@@ -40,16 +40,18 @@ class PortfolioAnalyzer:
     #     else:
     #         return history.index[-1].strftime('%Y-%m-%d') if not history.empty else end_date
 
+    # ADD CHECKING AND STORING FALSE OPEN DAYS
     def get_first_last_open_day(self, stock, start_date, end_date, first=True):
         """Fetches the first or last open market day within a given date range, using cached data if available."""
+
+        end_date_str = end_date.strftime('%Y-%m-%d')
         
         # Query Supabase for existing open days
         query = (
             db.supabase.table("market_open_days")
             .select("date")
             .eq("ticker", stock)
-            .gte("date", start_date)
-            .lte("date", end_date)
+            .eq("date", end_date.strftime('%Y-%m-%d'))
             .eq("is_open", True)
             .order("date", desc=False if first else True)
             .execute()
@@ -57,6 +59,7 @@ class PortfolioAnalyzer:
 
         # If data is found, return the first or last available date
         if query.data:
+            print(end_date)
             return query.data[0]["date"]
 
         # If not found, fetch from Yahoo Finance
@@ -64,8 +67,16 @@ class PortfolioAnalyzer:
         stock_data = yf.Ticker(stock)
         history = stock_data.history(start=start_date, end=end_date)
 
-        if history.empty:
-            return start_date if first else end_date  # No data, return the boundary
+        # Convert index to string dates
+        available_dates = set(history.index.strftime('%Y-%m-%d'))
+
+        # TO FIX, TIMEDELTA IS WRONG AND ERROR
+        # Check if end_date exists in available market days
+        if end_date_str not in available_dates:
+            print(f"Market closed on {end_date_str}, marking as closed.")
+            closed_day_entry = [{"ticker": stock, "date": end_date_str, "is_open": False}]
+            db.upsert_to_supabase(pd.DataFrame(closed_day_entry), "market_open_days", ["ticker", "date"])
+            return start_date if first else end_date  # Return the boundary if market was closed
 
         market_day = history.index[0].strftime('%Y-%m-%d') if first else history.index[-1].strftime('%Y-%m-%d')
 
