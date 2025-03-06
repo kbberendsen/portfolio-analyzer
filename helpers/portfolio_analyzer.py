@@ -2,23 +2,14 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, date, timedelta
 from helpers.ticker_mapping import ticker_to_name, isin_to_ticker
-from supabase import create_client, Client
-from dotenv import load_dotenv
-import os
+from helpers.db import DB
 
-# Load environment variables from .env file
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-print(SUPABASE_URL, SUPABASE_KEY)	
+db = DB()
 
 class PortfolioAnalyzer:
-    def __init__(self, transactions, supabase_url=SUPABASE_URL, supabase_key=SUPABASE_KEY):
+    def __init__(self, transactions):
         """Initialize with transaction data (pandas DataFrame)."""
         self.transactions = transactions
-        # Initialize the Supabase client
-        self.supabase: Client = create_client(supabase_url, supabase_key)
 
     def get_price_at_date(self, tickers, start, end):
         # Convert string dates to datetime
@@ -26,6 +17,7 @@ class PortfolioAnalyzer:
         end = datetime.strptime(end, '%Y-%m-%d')
 
         # Download stock data
+        print('Stock price API call')
         stock_data = yf.download(tickers, start=start, end=end, interval="1d")["Close"]
 
         # Convert timestamps to date strings
@@ -39,15 +31,51 @@ class PortfolioAnalyzer:
 
         return stock_prices_str
 
+    # def get_first_last_open_day(self, stock, start_date, end_date, first=True):
+    #     """Fetches the first or last open market day within a given date range."""
+    #     stock_data = yf.Ticker(stock)
+    #     history = stock_data.history(start=start_date, end=end_date)
+    #     if first:
+    #         return history.index[0].strftime('%Y-%m-%d') if not history.empty else start_date
+    #     else:
+    #         return history.index[-1].strftime('%Y-%m-%d') if not history.empty else end_date
+
     def get_first_last_open_day(self, stock, start_date, end_date, first=True):
-        """Fetches the first or last open market day within a given date range."""
+        """Fetches the first or last open market day within a given date range, using cached data if available."""
+        
+        # Query Supabase for existing open days
+        query = (
+            db.supabase.table("market_open_days")
+            .select("date")
+            .eq("ticker", stock)
+            .gte("date", start_date)
+            .lte("date", end_date)
+            .eq("is_open", True)
+            .order("date", desc=False if first else True)
+            .execute()
+        )
+
+        # If data is found, return the first or last available date
+        if query.data:
+            return query.data[0]["date"]
+
+        # If not found, fetch from Yahoo Finance
+        print(f"Fetching from open days from Yahoo Finance for {stock}")
         stock_data = yf.Ticker(stock)
         history = stock_data.history(start=start_date, end=end_date)
-        if first:
-            return history.index[0].strftime('%Y-%m-%d') if not history.empty else start_date
-        else:
-            return history.index[-1].strftime('%Y-%m-%d') if not history.empty else end_date
-    
+
+        if history.empty:
+            return start_date if first else end_date  # No data, return the boundary
+
+        market_day = history.index[0].strftime('%Y-%m-%d') if first else history.index[-1].strftime('%Y-%m-%d')
+
+        # Store new open days in Supabase
+        new_data = [{"ticker": stock, "date": date.strftime('%Y-%m-%d'), "is_open": True} for date in history.index]
+
+        db.upsert_to_supabase(pd.DataFrame(new_data), "market_open_days", ["ticker", "date"])
+
+        return market_day
+
     def calculate_mwr(self, stock, start_date, end_date=date.today().strftime('%Y-%m-%d'), stock_price_data=None):
         """Calculate Money Weighted Return using individual performance tracking for each transaction."""
         
@@ -198,22 +226,3 @@ class PortfolioAnalyzer:
         results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results) 
 
         return results
-    
-    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, upsert_keys: list):
-        """
-        Upsert data to Supabase in bulk.
-
-        :param df: DataFrame containing the data to be upserted
-        :param table: Name of the Supabase table to upsert data into
-        """
-        # Convert the entire DataFrame to a list of dictionaries for bulk upsert
-        data = df.to_dict(orient='records')
-        
-        # Perform bulk upsert
-        response = self.supabase.table(table_name).upsert(data).execute()
-
-        # Check response and handle
-        if 'error' in response:
-            print(f"Upsert failed: {response.error_message}")
-        else:
-            print(f"Successfully upserted {len(data)} rows.")

@@ -1,32 +1,47 @@
 import yfinance as yf
+from datetime import datetime, date, timedelta
 import pandas as pd
-from datetime import datetime, timedelta
+from helpers.db import DB
 
-def get_price_at_date(stock, date):
-    """Fetches end-of-day stock price for a specific date using yfinance."""
-    stock_data = yf.Ticker(stock)
-    history = stock_data.history(period="1d", start=datetime.strptime(date, '%Y-%m-%d'))
-    # Return the closing price for the specified date
-    return float(history['Close'].iloc[0]) if not history.empty else None
 
-# day_1 = get_price_at_date('XYZ', '2020-11-11')
-# day_2 = get_price_at_date('XYZ', '2024-11-12')
-# print(day_1)
-# print(day_2)
+def get_price_at_date(tickers, start, end):
+        # Convert string dates to datetime
+        start = datetime.strptime(start, '%Y-%m-%d')
+        end = datetime.strptime(end, '%Y-%m-%d')
 
-tickers = ['XYZ', 'PYPL','NQSE.DE']
+        # Download stock data
+        stock_data = yf.download(tickers, start=start, end=end, interval="1d")["Close"]
 
-def get_price_at_date(tickers, date):
-    stock_data = yf.download(tickers, start=date, end=(datetime.strptime(date, '%Y-%m-%d') + timedelta(days=4)).strftime('%Y-%m-%d'), interval="1d")#["Close"]
-    return stock_data#.to_dict()
+        # Convert timestamps to date strings
+        if isinstance(stock_data, pd.Series):  # Single stock case
+            stock_prices_str = {date.strftime('%Y-%m-%d'): price for date, price in stock_data.items()}
+        else:  # Multiple stocks case
+            stock_prices_str = {
+                stock: {date.strftime('%Y-%m-%d'): price for date, price in prices.items()}
+                for stock, prices in stock_data.to_dict().items()
+            }
 
-# stock_price_data = get_price_at_date(tickers, '2025-02-04')
-# print(stock_price_data)
+        return stock_prices_str
 
-# end_date_cor = datetime.strptime('2025-02-07', '%Y-%m-%d')
-# end_date_cor_ts = pd.Timestamp(end_date_cor).tz_localize('UTC') # Convert end_date to a pandas Timestamp with UTC
-# end_price = stock_price_data.get('XYZ', {}).get(end_date_cor_ts, 0)
-# print(end_price)
+data = get_price_at_date([ 'AAPL', 'MSFT'], '2023-01-01', '2023-01-05')
 
-test = get_price_at_date(tickers, '2025-02-08')
-print(test)
+data_to_insert = [
+            {"ticker": ticker, "date": date, "price": price}
+            for ticker, date_prices in data.items()
+            for date, price in date_prices.items()
+        ]
+
+#print(data_to_insert)
+
+def get_first_last_open_day(stock, start_date, end_date, first=True):
+        """Fetches the first or last open market day within a given date range."""
+        stock_data = yf.Ticker(stock)
+        history = stock_data.history(start=start_date, end=end_date)
+        print (history)
+        if first:
+            return history.index[0].strftime('%Y-%m-%d') if not history.empty else start_date
+        else:
+            return history.index[-1].strftime('%Y-%m-%d') if not history.empty else end_date
+
+db = DB()
+print(db.get_row_count('portfolio_performance_daily'))

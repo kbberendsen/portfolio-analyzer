@@ -2,9 +2,8 @@ import os
 from datetime import datetime, date, timedelta
 import pandas as pd
 from helpers.transactions import transactions
-import time
 
-def calc_monthly(analyzer, start_date='2020-10-01'):
+def calc_monthly(analyzer, database, start_date='2020-10-01'):
     print('Retrieving monthly data...')
 
     # Set fixed start date
@@ -97,7 +96,7 @@ def calc_monthly(analyzer, start_date='2020-10-01'):
 
     print('Monthly output saved')
 
-def calc_daily(analyzer, start_date):
+def calc_daily(analyzer, database, start_date):
     print('Retrieving daily data...')
 
     # Set fixed start date
@@ -108,7 +107,7 @@ def calc_daily(analyzer, start_date):
     # Generate list of daily end dates from start date to today
     end_dates = pd.date_range(start=start_date, end=today, freq='D')[1:]  # Exclude the start_date itself
 
-    # Initialize an empty list to store portfolio data for each month
+    # Initialize an empty list to store portfolio data for each day
     portfolio_results_list = []
 
     # Define the path to the cache file
@@ -136,6 +135,7 @@ def calc_daily(analyzer, start_date):
     # Get stock price data for new end_dates
     stock_list = transactions["Stock"].unique().tolist() # All stocks
     stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
+    database.store_stock_prices(stock_price_data)
 
     # Loop over each end date, calculate portfolio results, and add to the list
     for end_date in end_dates:
@@ -200,6 +200,6 @@ def calc_daily(analyzer, start_date):
     portfolio_results_df.to_csv(os.path.join('output', 'portfolio_daily.csv'), index=False)
 
     # Upsert to Supabase
-    analyzer.upsert_to_supabase(portfolio_results_df, 'portfolio_performance_daily', ['ticker', 'end_date'])
+    database.upsert_to_supabase(portfolio_results_df, 'portfolio_performance_daily', ['ticker', 'end_date'])
 
     print('Daily output saved')
