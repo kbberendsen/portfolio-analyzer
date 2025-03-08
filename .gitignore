@@ -1,5 +1,6 @@
 *.pyc
 *.out
+*.env
 terminal.txt
 test.py
 test.ipynb
@@ -18,3 +19,4 @@ uploads/*.csv
 
 # Ignore all files in the output folder
 output/*.csv
+output/*.parquet
