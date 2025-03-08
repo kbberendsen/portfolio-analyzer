@@ -1,5 +1,8 @@
 import os
 import pandas as pd
+from helpers.db import DB
+ 
+db = DB()
 
 def db_refresh(db):
     # Check if Parquet files exist
@@ -36,3 +39,5 @@ def db_refresh(db):
         # Upsert data to Supabase
         db.upsert_to_supabase(db_portfolio_results_df, 'portfolio_performance_daily')
         db.upsert_to_supabase(db_stock_prices_df, 'stock_prices')
+
+db_refresh(db)

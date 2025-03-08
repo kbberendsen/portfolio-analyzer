@@ -1,8 +1,5 @@
 import pandas as pd
 import numpy as np
-import yfinance as yf
-from datetime import datetime, date, timedelta
-from helpers.ticker_mapping import ticker_to_name, isin_to_ticker
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import os
