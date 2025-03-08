@@ -112,19 +112,18 @@ rename_dict = {
 }
 
 # Load monthly and daily data
-df = pd.read_csv(os.path.join('output', 'portfolio_monthly.csv'))
-daily_df = pd.read_csv(os.path.join('output', 'portfolio_daily.csv'))
+df = pd.read_parquet(os.path.join('output', 'portfolio_monthly.parquet'))
+daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
 
 # Rename columns
 df = df.rename(columns=rename_dict)
 daily_df = daily_df.rename(columns=rename_dict)
 
 # Convert dates to datetime format
-df['Start Date'] = df['Start Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
-df['End Date'] = df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
-
-daily_df['Start Date'] = daily_df['Start Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
-daily_df['End Date'] = daily_df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+df['Start Date'] = pd.to_datetime(df['Start Date'])
+df['End Date'] = pd.to_datetime(df['End Date'])
+daily_df['Start Date'] = pd.to_datetime(daily_df['Start Date'])
+daily_df['End Date'] = pd.to_datetime(daily_df['End Date'])
 
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:

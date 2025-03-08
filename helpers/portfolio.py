@@ -1,141 +1,62 @@
 import os
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 import pandas as pd
 from helpers.transactions import transactions
-import time
 
-def calc_monthly(analyzer, start_date='2020-10-01'):
-    print('Retrieving monthly data...')
-
-    # Set fixed start date
-    start_date = datetime.strptime(start_date, '%Y-%m-%d')
-    # Initialize today's date as the end of the loop range
-    today = datetime.today()
-
-    # Generate list of end dates for the first day of each month from start date to today
-    end_dates = pd.date_range(start=start_date, end=today, freq='MS')[1:]  # Exclude the start_date itself
-
-    # Initialize an empty list to store portfolio data for each month
-    portfolio_results_list = []
-    portfolio_results_df = None
-
-    # Define the path to the cache file
-    cache_file_path = os.path.join('data', 'portfolio_results_monthly.pkl')
-
-    # Load existing results from the pickle file if it exists
-    try:
-        portfolio_results_df = pd.read_pickle(cache_file_path)
-        print('Monthly file found')
-    except (FileNotFoundError, pd.errors.EmptyDataError):
-        # Start with an empty DataFrame if the file doesn't exist
-        portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 'avg_cost', 
-                                                    'total_cost', 'current_value', 'current_money_weighted_return', 
-                                                    'realized_return', 'net_return', 'current_performance_percentage', 
-                                                    'net_performance_percentage'])
-        
-        
+def calc_portfolio(analyzer, db, start_date):
+    print('Retrieving portfolio data...')
+    
+    # Fix data types and definitions
     transactions["Date"] = pd.to_datetime(transactions["Date"])
-    stock_list = list(transactions["Stock"].unique())
-
-    # Get the first day of the current month
-    first_day_current_month = pd.to_datetime(today).replace(day=1)
-    first_day_current_month = first_day_current_month.strftime('%Y-%m-%d')
-
-    # Check if the first day of the current month already exists in portfolio data
-    if first_day_current_month in portfolio_results_df['end_date'].unique():
-        print(f"Data for {first_day_current_month} already exists. Skipping stock price retrieval.")
-    else:
-        # Get stock price data for new end_dates
-        stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
-
-        # Loop over each end date, calculate portfolio results, and add to the list
-        for end_date in end_dates:
-            try:
-                # Format end date to string for comparison
-                end_date_str = end_date.strftime('%Y-%m-%d')
-
-                # Check if the result for this end date already exists in the DataFrame
-                if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
-                    continue  # Skip if already present
-
-                print(f'Retrieving data for: {end_date_str}')
-                
-                transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
-                
-                stock_list = list(transactions_before_end["Stock"].unique())
-
-                # Retrieve stock results using analyzer class
-                result = analyzer.calculate_all_stocks_mwr(
-                    start_date=start_date.strftime('%Y-%m-%d'), 
-                    end_date=end_date_str, 
-                    stocks=stock_list,
-                    stock_prices=stock_price_data
-                )
-                
-                for key in result:
-                    portfolio_data = result.get(key)
-                    
-                    # Ensure end_date is included in the portfolio_data
-                    portfolio_data['end_date'] = end_date_str
-                    
-                    # Append the new data to the list
-                    portfolio_results_list.append(portfolio_data)
-
-            except Exception as e:
-                print(f'Failed to retrieve monthly data for {end_date}: {e}')
-                continue
-
-    # Combine the list into a DataFrame if there are new results
-    if portfolio_results_list:
-        new_portfolio_results_df = pd.DataFrame(portfolio_results_list)
-        # Append new results to the existing DataFrame
-        portfolio_results_df = pd.concat([portfolio_results_df, new_portfolio_results_df], ignore_index=True)
-
-    # Save the updated DataFrame to a pickle file and csv
-    portfolio_results_df.to_pickle(cache_file_path)
-    portfolio_results_df.to_csv(os.path.join('output', 'portfolio_monthly.csv'), index=False)
-
-    print('Monthly output saved')
-
-def calc_daily(analyzer, start_date):
-    print('Retrieving daily data...')
-
-    # Set fixed start date
     start_date = datetime.strptime(start_date, '%Y-%m-%d')
-    # Initialize today's date as the end of the loop range
     today = datetime.today()
-
-    # Generate list of daily end dates from start date to today
     end_dates = pd.date_range(start=start_date, end=today, freq='D')[1:]  # Exclude the start_date itself
 
-    # Initialize an empty list to store portfolio data for each month
+    # Initialize an empty list to store portfolio data for each day
     portfolio_results_list = []
 
-    # Define the path to the cache file
-    cache_file_path = os.path.join('data', 'portfolio_results_daily.pkl')
+    # Get recent stock price data for new end_dates
+    stock_list = transactions["Stock"].unique().tolist() # All stocks
+    yf_start_date = (today - timedelta(days=60)) #start_date
+    yf_stock_price_data = analyzer.get_price_at_date(stock_list, yf_start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
 
-    # Load existing results from the pickle file if it exists
+    # Load existing results from Parquet file
     try:
-        portfolio_results_df = pd.read_pickle(cache_file_path)
-        print('Daily file found')
+        db_portfolio_results_df = pd.read_parquet('output/portfolio_performance_daily.parquet')
+        print('Loaded portfolio_performance_daily from Parquet')
 
         # Remove last 2 days to force refresh (get end of day data)
-        last_2_days = sorted(portfolio_results_df['end_date'].unique())[-2:]
-        portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
+        last_2_days = sorted(db_portfolio_results_df['end_date'].unique())[-2:]
+        db_portfolio_results_df = db_portfolio_results_df[~db_portfolio_results_df['end_date'].isin(last_2_days)]
 
-    except (FileNotFoundError, pd.errors.EmptyDataError):
-        # Start with an empty DataFrame if the file doesn't exist
-        portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
-                                                    'avg_cost', 'total_cost', 'current_value', 
-                                                    'current_money_weighted_return', 'realized_return', 
-                                                    'net_return', 'current_performance_percentage', 
-                                                    'net_performance_percentage'])
-        
-    transactions["Date"] = pd.to_datetime(transactions["Date"])
+    except Exception as e:
+        print(f'Failed to load portfolio_performance_daily from Parquet: {e}')
+        db_portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
+                                                        'avg_cost', 'total_cost', 'current_value', 
+                                                        'current_money_weighted_return', 'realized_return', 
+                                                        'net_return', 'current_performance_percentage', 
+                                                        'net_performance_percentage'])
+    
+    # Load stock prices from Parquet file
+    try:
+        db_stock_prices_df = pd.read_parquet('output/stock_prices.parquet')
+        db_stock_prices_df = db_stock_prices_df.dropna(subset=['price'])
+        db_stock_prices_dict = db_stock_prices_df.groupby('ticker').apply(lambda x: x.set_index('date')['price'].to_dict()).to_dict()
+        print('Loaded stock_prices from Parquet')
+    except Exception as e:
+        print(f'Failed to load stock_prices from Parquet: {e}')
 
-    # Get stock price data for new end_dates
-    stock_list = transactions["Stock"].unique().tolist() # All stocks
-    stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
+
+    # Append fresh stock price data to db_stock_prices_dict
+    for ticker, prices in yf_stock_price_data.items():
+        if ticker in db_stock_prices_dict:
+            db_stock_prices_dict[ticker].update(prices)
+        else:
+            db_stock_prices_dict[ticker] = prices
+
+    # Remove duplicates from db_stock_prices_dict
+    for ticker in db_stock_prices_dict:
+        db_stock_prices_dict[ticker] = {date: price for date, price in sorted(db_stock_prices_dict[ticker].items())}
 
     # Loop over each end date, calculate portfolio results, and add to the list
     for end_date in end_dates:
@@ -149,7 +70,7 @@ def calc_daily(analyzer, start_date):
                 continue  # Skip this iteration if it's a weekend
             
             # Check if the result for this end date already exists in the DataFrame
-            if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
+            if not db_portfolio_results_df[db_portfolio_results_df['end_date'] == end_date_str].empty:
                 continue  # Skip if already present
 
             print(f'Retrieving data for: {end_date_str}')
@@ -168,7 +89,7 @@ def calc_daily(analyzer, start_date):
                 start_date=start_date.strftime('%Y-%m-%d'), 
                 end_date=end_date_str, 
                 stocks=stock_list,
-                stock_prices=stock_price_data
+                stock_prices=db_stock_prices_dict
             )
             
             for key in result:
@@ -193,10 +114,37 @@ def calc_daily(analyzer, start_date):
     if portfolio_results_list:
         new_portfolio_results_df = pd.DataFrame(portfolio_results_list)
         # Append new results to the existing DataFrame
-        portfolio_results_df = pd.concat([portfolio_results_df, new_portfolio_results_df], ignore_index=True)
+        db_portfolio_results_df = pd.concat([db_portfolio_results_df, new_portfolio_results_df], ignore_index=True)
 
-    # Save the updated DataFrame to a pickle file and csv
-    portfolio_results_df.to_pickle(cache_file_path)
-    portfolio_results_df.to_csv(os.path.join('output', 'portfolio_daily.csv'), index=False)
+    # Save the updated DataFrame to a Parquet file
+    db_portfolio_results_df.to_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'), index=False)
+    stock_prices_df = pd.DataFrame([
+        {"ticker": ticker, "date": date, "price": price if price is not None else 0}
+        for ticker, date_prices in db_stock_prices_dict.items()
+        for date, price in date_prices.items()
+    ])
+    stock_prices_df = stock_prices_df.dropna(subset=['price'])
+    stock_prices_df.to_parquet(os.path.join('output', 'stock_prices.parquet'), index=False)
 
-    print('Daily output saved')
+    print('Daily output saved locally')
+
+    # Extract monthly data from the daily data
+    monthly_results = db_portfolio_results_df.copy()
+    monthly_results['end_date'] = pd.to_datetime(monthly_results['end_date'])
+
+    # Set index and sort values to ensure correct selection
+    monthly_results = monthly_results.sort_values(['ticker', 'end_date'])
+
+    # Resample first-of-month data per ticker
+    monthly_results_df = (
+        monthly_results.set_index('end_date')
+        .groupby('ticker')
+        .resample('MS')
+        .first()
+        .reset_index(level=0, drop=True)
+        .reset_index()
+    )
+
+    # Save the updated DataFrame to a Parquet file
+    monthly_results_df.to_parquet(os.path.join('output', 'portfolio_monthly.parquet'), index=False)
+    print('Monthly output saved locally')

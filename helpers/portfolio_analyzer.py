@@ -1,7 +1,10 @@
 import pandas as pd
 import yfinance as yf
-from datetime import datetime, date, timedelta
-from helpers.ticker_mapping import ticker_to_name, isin_to_ticker
+from datetime import datetime, date
+from helpers.ticker_mapping import ticker_to_name
+from helpers.db import DB
+
+db = DB()
 
 class PortfolioAnalyzer:
     def __init__(self, transactions):
@@ -27,15 +30,20 @@ class PortfolioAnalyzer:
 
         return stock_prices_str
 
-    def get_first_last_open_day(self, stock, start_date, end_date, first=True):
-        """Fetches the first or last open market day within a given date range."""
-        stock_data = yf.Ticker(stock)
-        history = stock_data.history(start=start_date, end=end_date)
-        if first:
-            return history.index[0].strftime('%Y-%m-%d') if not history.empty else start_date
-        else:
-            return history.index[-1].strftime('%Y-%m-%d') if not history.empty else end_date
-    
+    def get_first_last_open_day(self, start_date, end_date, stock_price_data, first=True):
+        """Fetches the first or last open market day within a given date range using stock_price_data."""
+
+        # Filter stock_price_data for the given date range
+        stock_prices = stock_price_data
+
+        filtered_dates = [date for date in stock_prices.keys() if start_date <= datetime.strptime(date, '%Y-%m-%d') < end_date]
+
+        if not filtered_dates:
+            return start_date.strftime('%Y-%m-%d') if first else end_date.strftime('%Y-%m-%d')
+
+        # Return the first or last open market day
+        return min(filtered_dates) if first else max(filtered_dates)
+
     def calculate_mwr(self, stock, start_date, end_date=date.today().strftime('%Y-%m-%d'), stock_price_data=None):
         """Calculate Money Weighted Return using individual performance tracking for each transaction."""
         
@@ -90,7 +98,7 @@ class PortfolioAnalyzer:
         # Calculate current return for remaining holdings
         if quantity_held > 0:
             # Corrected end_date for market open
-            end_date_cor = self.get_first_last_open_day(stock, start_date, end_date, first=False)
+            end_date_cor = self.get_first_last_open_day( start_date, end_date, stock_price_data, first=False)
             end_date_cor = datetime.strptime(end_date_cor, '%Y-%m-%d')
 
             # Get stock price from pre-fetched data
@@ -158,7 +166,7 @@ class PortfolioAnalyzer:
         # Return the aggregated portfolio performance metrics
         return {
                 "product": "Full portfolio",
-                "ticker": None,
+                "ticker": "FULL",
                 "quantity": quantity,
                 "start_date": start_date,
                 "end_date": end_date,
@@ -183,6 +191,6 @@ class PortfolioAnalyzer:
             results[stock] = self.calculate_mwr(stock, start_date, end_date, stock_prices[stock])
 
         # Full portfolio
-        results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results)
+        results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results) 
 
         return results
