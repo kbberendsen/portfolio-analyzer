@@ -3,14 +3,10 @@ import pandas as pd
 from helpers.transactions import transactions
 from helpers.portfolio_analyzer import PortfolioAnalyzer
 from helpers.db import DB
-from helpers.portfolio import calc_monthly, calc_daily
+from helpers.portfolio import calc_portfolio
 
 # Intialize PortfolioAnalyzer and DB
 analyzer = PortfolioAnalyzer(transactions)
 db = DB()
 
-# Monthly
-calc_monthly(analyzer, db)
-
-# Daily
-calc_daily(analyzer, db, '2023-12-28')
+calc_portfolio(analyzer, db, '2020-11-26')

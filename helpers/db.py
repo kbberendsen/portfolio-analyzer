@@ -6,6 +6,7 @@ from helpers.ticker_mapping import ticker_to_name, isin_to_ticker
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import os
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -28,6 +29,7 @@ class DB:
                     if attempt + 1 == max_retries:
                         print("Max retries reached. Operation failed.")
                         return None
+                    time.sleep(attempt + 1)  # Increasing sleep duration after each retry
 
         self._retry_operation = _retry_operation
 
@@ -39,7 +41,7 @@ class DB:
 
         return self._retry_operation(operation, max_retries)
 
-    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, upsert_keys: list, max_retries=3):
+    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, upsert_keys: list, max_retries=5):
         """
         Upsert data to Supabase in bulk with retry mechanism.
 
