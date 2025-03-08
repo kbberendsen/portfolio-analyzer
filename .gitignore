@@ -10,6 +10,7 @@ data/*.csv
 
 # Ignore all .pkl files in the data folder
 data/*.pkl
+data/*.parquet
 
 # Ignore data backup
 data_backup/
@@ -19,3 +20,4 @@ uploads/*.csv
 
 # Ignore all files in the output folder
 output/*.csv
+output/*.parquet

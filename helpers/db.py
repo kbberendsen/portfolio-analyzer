@@ -29,7 +29,7 @@ class DB:
                     if attempt + 1 == max_retries:
                         print("Max retries reached. Operation failed.")
                         return None
-                    time.sleep(attempt + 1)  # Increasing sleep duration after each retry
+                    time.sleep(attempt + 0.5)  # Increasing sleep duration after each retry
 
         self._retry_operation = _retry_operation
 
@@ -41,7 +41,7 @@ class DB:
 
         return self._retry_operation(operation, max_retries)
 
-    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, upsert_keys: list, max_retries=5):
+    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, max_retries=5):
         """
         Upsert data to Supabase in bulk with retry mechanism.
 
@@ -55,7 +55,7 @@ class DB:
         def operation():
             response = self.supabase.table(table_name).upsert(data).execute()
             if 'error' in response:
-                print(f"Upsert failed: {response.error_message}")
+                print(f"Upsert failed: {response.error_message} for {table_name}")
             else:
                 print(f"Successfully upserted {len(data)} rows into {table_name} table.")
             return response

@@ -1,8 +1,7 @@
 import os
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 import pandas as pd
 from helpers.transactions import transactions
-import time
 
 def calc_portfolio(analyzer, db, start_date):
     print('Retrieving portfolio data...')
@@ -16,40 +15,48 @@ def calc_portfolio(analyzer, db, start_date):
     # Initialize an empty list to store portfolio data for each day
     portfolio_results_list = []
 
-    # Load existing results from Supabase
+    # Get recent stock price data for new end_dates
+    stock_list = transactions["Stock"].unique().tolist() # All stocks
+    yf_start_date = (today - timedelta(days=60)) #start_date
+    yf_stock_price_data = analyzer.get_price_at_date(stock_list, yf_start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
+
+    # Load existing results from Parquet file
     try:
-        db_portfolio_results_df = db.fetch_all_df('portfolio_performance_daily')
-        print('Loaded portfolio_performance_daily from Supabase')
+        db_portfolio_results_df = pd.read_parquet('output/portfolio_performance_daily.parquet')
+        print('Loaded portfolio_performance_daily from Parquet')
 
         # Remove last 2 days to force refresh (get end of day data)
         last_2_days = sorted(db_portfolio_results_df['end_date'].unique())[-2:]
         db_portfolio_results_df = db_portfolio_results_df[~db_portfolio_results_df['end_date'].isin(last_2_days)]
 
     except Exception as e:
-        print(f'Failed to load portfolio_performance_daily from Supabase: {e}')
+        print(f'Failed to load portfolio_performance_daily from Parquet: {e}')
         db_portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
                                                         'avg_cost', 'total_cost', 'current_value', 
                                                         'current_money_weighted_return', 'realized_return', 
                                                         'net_return', 'current_performance_percentage', 
                                                         'net_performance_percentage'])
-
-    # Get recent stock price data for new end_dates
-    stock_list = transactions["Stock"].unique().tolist() # All stocks(today - timedelta(days=60))
-    yf_stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
-    try:
-        db.store_stock_prices(yf_stock_price_data)
-    except Exception as e:
-        print(f'Failed to store stock prices in Supabase: {e}')
     
-    # Load Supabase tables as cache
+    # Load stock prices from Parquet file
     try:
-        db_stock_prices_df = db.fetch_all_df('stock_prices')
+        db_stock_prices_df = pd.read_parquet('output/stock_prices.parquet')
         db_stock_prices_df = db_stock_prices_df.dropna(subset=['price'])
         db_stock_prices_dict = db_stock_prices_df.groupby('ticker').apply(lambda x: x.set_index('date')['price'].to_dict()).to_dict()
-        print('Loaded stock_prices from Supabase')
+        print('Loaded stock_prices from Parquet')
     except Exception as e:
-        print(f'Failed to load stock_prices from Supabase: {e}')
+        print(f'Failed to load stock_prices from Parquet: {e}')
 
+
+    # Append fresh stock price data to db_stock_prices_dict
+    for ticker, prices in yf_stock_price_data.items():
+        if ticker in db_stock_prices_dict:
+            db_stock_prices_dict[ticker].update(prices)
+        else:
+            db_stock_prices_dict[ticker] = prices
+
+    # Remove duplicates from db_stock_prices_dict
+    for ticker in db_stock_prices_dict:
+        db_stock_prices_dict[ticker] = {date: price for date, price in sorted(db_stock_prices_dict[ticker].items())}
 
     # Loop over each end date, calculate portfolio results, and add to the list
     for end_date in end_dates:
@@ -109,8 +116,13 @@ def calc_portfolio(analyzer, db, start_date):
         # Append new results to the existing DataFrame
         db_portfolio_results_df = pd.concat([db_portfolio_results_df, new_portfolio_results_df], ignore_index=True)
 
-    # Save the updated DataFrame to a csv
-    db_portfolio_results_df.to_csv(os.path.join('output', 'portfolio_daily.csv'), index=False)
+    # Save the updated DataFrame to a Parquet file
+    db_portfolio_results_df.to_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'), index=False)
+    pd.DataFrame([
+        {"ticker": ticker, "date": date, "price": price}
+        for ticker, date_prices in db_stock_prices_dict.items()
+        for date, price in date_prices.items()
+    ]).to_parquet(os.path.join('output', 'stock_prices.parquet'), index=False)
 
     print('Daily output saved locally')
 
@@ -131,9 +143,9 @@ def calc_portfolio(analyzer, db, start_date):
         .reset_index()
     )
 
-    # Save the updated DataFrame to a csv
-    monthly_results_df.to_csv(os.path.join('output', 'portfolio_monthly.csv'), index=False)
+    # Save the updated DataFrame to a Parquet file
+    monthly_results_df.to_parquet(os.path.join('output', 'portfolio_monthly.parquet'), index=False)
     print('Monthly output saved locally')
 
     # Upsert to Supabase with retry mechanism
-    db.upsert_to_supabase(db_portfolio_results_df, 'portfolio_performance_daily', ['ticker', 'end_date'])
+    #db.upsert_to_supabase(db_portfolio_results_df, 'portfolio_performance_daily')

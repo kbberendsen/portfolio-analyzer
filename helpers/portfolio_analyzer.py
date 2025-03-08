@@ -1,7 +1,7 @@
 import pandas as pd
 import yfinance as yf
-from datetime import datetime, date, timedelta
-from helpers.ticker_mapping import ticker_to_name, isin_to_ticker
+from datetime import datetime, date
+from helpers.ticker_mapping import ticker_to_name
 from helpers.db import DB
 
 db = DB()
@@ -17,7 +17,6 @@ class PortfolioAnalyzer:
         end = datetime.strptime(end, '%Y-%m-%d')
 
         # Download stock data
-        print('Stock price API call')
         stock_data = yf.download(tickers, start=start, end=end, interval="1d")["Close"]
 
         # Convert timestamps to date strings
