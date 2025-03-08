@@ -13,6 +13,7 @@ analyzer = PortfolioAnalyzer(transactions)
 db = DB()
 
 calc_portfolio(analyzer, db, '2020-11-26')
+db_refresh(db)
 
 # End timing
 end_time = time.time()
