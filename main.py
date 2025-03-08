@@ -3,6 +3,7 @@ from helpers.transactions import transactions
 from helpers.portfolio_analyzer import PortfolioAnalyzer
 from helpers.db import DB
 from helpers.portfolio import calc_portfolio
+from helpers.db_refresh import db_refresh
 
 # Start timing
 start_time = time.time()

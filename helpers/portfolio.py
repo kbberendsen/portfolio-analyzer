@@ -118,11 +118,13 @@ def calc_portfolio(analyzer, db, start_date):
 
     # Save the updated DataFrame to a Parquet file
     db_portfolio_results_df.to_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'), index=False)
-    pd.DataFrame([
-        {"ticker": ticker, "date": date, "price": price}
+    stock_prices_df = pd.DataFrame([
+        {"ticker": ticker, "date": date, "price": price if price is not None else 0}
         for ticker, date_prices in db_stock_prices_dict.items()
         for date, price in date_prices.items()
-    ]).to_parquet(os.path.join('output', 'stock_prices.parquet'), index=False)
+    ])
+    stock_prices_df = stock_prices_df.dropna(subset=['price'])
+    stock_prices_df.to_parquet(os.path.join('output', 'stock_prices.parquet'), index=False)
 
     print('Daily output saved locally')
 
@@ -146,6 +148,3 @@ def calc_portfolio(analyzer, db, start_date):
     # Save the updated DataFrame to a Parquet file
     monthly_results_df.to_parquet(os.path.join('output', 'portfolio_monthly.parquet'), index=False)
     print('Monthly output saved locally')
-
-    # Upsert to Supabase with retry mechanism
-    #db.upsert_to_supabase(db_portfolio_results_df, 'portfolio_performance_daily')

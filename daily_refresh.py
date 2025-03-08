@@ -43,4 +43,3 @@ else:
     # Upsert data to Supabase
     db.upsert_to_supabase(db_portfolio_results_df, 'portfolio_performance_daily')
     db.upsert_to_supabase(db_stock_prices_df, 'stock_prices')
-    print('Data upserted to Supabase')
