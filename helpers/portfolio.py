@@ -147,6 +147,7 @@ def calc_daily(analyzer, db, start_date):
 
     try:
         db_stock_prices_df = db.fetch_all_df('stock_prices')
+        db_stock_prices_df = db_stock_prices_df.dropna(subset=['price'])
         db_stock_prices_dict = db_stock_prices_df.groupby('ticker').apply(lambda x: x.set_index('date')['price'].to_dict()).to_dict()
         print('Loaded stock_prices from Supabase')
     except Exception as e:

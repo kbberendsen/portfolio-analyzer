@@ -18,12 +18,26 @@ class DB:
         # Initialize the Supabase client
         self.supabase: Client = create_client(supabase_url, supabase_key)
 
-    def get_row_count(self, table_name: str) -> int:
+        def _retry_operation(operation, max_retries, *args, **kwargs):
+            """Helper method to retry an operation with a specified number of retries."""
+            for attempt in range(max_retries):
+                try:
+                    return operation(*args, **kwargs)
+                except Exception as e:
+                    print(f"Attempt {attempt + 1} failed: {e}")
+                    if attempt + 1 == max_retries:
+                        print("Max retries reached. Operation failed.")
+                        return None
+
+        self._retry_operation = _retry_operation
+
+    def get_row_count(self, table_name: str, max_retries=3) -> int:
         """Returns the number of rows in the given table."""
-        # Fetch the row count using Supabase client
-        response = self.supabase.table(table_name).select("count").single().execute()
-        
-        return response
+        def operation():
+            response = self.supabase.table(table_name).select("count").single().execute()
+            return response
+
+        return self._retry_operation(operation, max_retries)
 
     def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, upsert_keys: list, max_retries=3):
         """
@@ -35,23 +49,18 @@ class DB:
         """
         # Convert the entire DataFrame to a list of dictionaries for bulk upsert
         data = df.to_dict(orient='records')
-        
-        # Perform bulk upsert with retry mechanism
-        for attempt in range(max_retries):
-            try:
-                response = self.supabase.table(table_name).upsert(data).execute()
-                # Check response and handle
-                if 'error' in response:
-                    print(f"Upsert failed: {response.error_message}")
-                else:
-                    print(f"Successfully upserted {len(data)} rows into {table_name} table.")
-                    break
-            except Exception as e:
-                print(f"Upsert attempt {attempt + 1} failed: {e}")
-                if attempt + 1 == max_retries:
-                    print("Max retries reached. Upsert operation failed.")
 
-    def store_stock_prices(self, stock_price_data):
+        def operation():
+            response = self.supabase.table(table_name).upsert(data).execute()
+            if 'error' in response:
+                print(f"Upsert failed: {response.error_message}")
+            else:
+                print(f"Successfully upserted {len(data)} rows into {table_name} table.")
+            return response
+
+        self._retry_operation(operation, max_retries)
+
+    def store_stock_prices(self, stock_price_data, max_retries=3):
         """
         Efficiently stores stock prices in the 'stock_prices' table using batch upsert.
         """
@@ -64,27 +73,33 @@ class DB:
             for date, price in date_prices.items()
         ]
 
-        # Upsert data in bulk to avoid looping inserts
-        response = self.supabase.table(table_name).upsert(data).execute()
+        def operation():
+            response = self.supabase.table(table_name).upsert(data).execute()
+            if 'error' in response:
+                print("Upsert failed (stock prices)", response["error"])
+            else:
+                print(f"Successfully upserted {len(data)} rows into {table_name} table.")
+            return response
 
-        if 'error' in response:
-            print("Upsert failed (stock prices)", response["error"])
-        else:
-            print(f"Successfully upserted {len(data)} rows into {table_name} table.")
+        self._retry_operation(operation, max_retries)
 
-    def fetch_all_df(self, table_name):
+    def fetch_all_df(self, table_name, max_retries=3):
         """Fetch all rows from a Supabase table using pagination."""
         all_rows = []
         page_size = 1000  # Adjust the page size as needed
         offset = 0
 
-        while True:
+        def operation():
+            nonlocal offset
             response = self.supabase.table(table_name).select('*').range(offset, offset + page_size - 1).execute()
             if response.data:
                 all_rows.extend(response.data)
                 offset += page_size
-            else:
+            return response
+
+        while True:
+            result = self._retry_operation(operation, max_retries)
+            if not result or not result.data:
                 break
 
         return pd.DataFrame(all_rows)
-
