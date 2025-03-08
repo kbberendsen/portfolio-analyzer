@@ -2,8 +2,9 @@ import os
 from datetime import datetime, date, timedelta
 import pandas as pd
 from helpers.transactions import transactions
+import time
 
-def calc_monthly(analyzer, database, start_date='2020-10-01'):
+def calc_monthly(analyzer, db, start_date='2020-10-01'):
     print('Retrieving monthly data...')
 
     # Set fixed start date
@@ -96,15 +97,13 @@ def calc_monthly(analyzer, database, start_date='2020-10-01'):
 
     print('Monthly output saved')
 
-def calc_daily(analyzer, database, start_date):
+def calc_daily(analyzer, db, start_date):
     print('Retrieving daily data...')
-
-    # Set fixed start date
+    
+    # Fix data types and definitions
+    transactions["Date"] = pd.to_datetime(transactions["Date"])
     start_date = datetime.strptime(start_date, '%Y-%m-%d')
-    # Initialize today's date as the end of the loop range
     today = datetime.today()
-
-    # Generate list of daily end dates from start date to today
     end_dates = pd.date_range(start=start_date, end=today, freq='D')[1:]  # Exclude the start_date itself
 
     # Initialize an empty list to store portfolio data for each day
@@ -129,13 +128,30 @@ def calc_daily(analyzer, database, start_date):
                                                     'current_money_weighted_return', 'realized_return', 
                                                     'net_return', 'current_performance_percentage', 
                                                     'net_performance_percentage'])
-        
-    transactions["Date"] = pd.to_datetime(transactions["Date"])
 
-    # Get stock price data for new end_dates
-    stock_list = transactions["Stock"].unique().tolist() # All stocks
-    stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
-    database.store_stock_prices(stock_price_data)
+    # Get recent stock price data for new end_dates
+    stock_list = transactions["Stock"].unique().tolist() # All stocks(today - timedelta(days=60))
+    yf_stock_price_data = analyzer.get_price_at_date(stock_list, start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
+    try:
+        db.store_stock_prices(yf_stock_price_data)
+    except Exception as e:
+        print(f'Failed to store stock prices in Supabase: {e}')
+    
+    # Load Supabase tables as cache
+    try:
+        db_portfolio_results = db.supabase.table('portfolio_performance_daily').select('*').execute()
+        db_portfolio_results_df = pd.DataFrame(db_portfolio_results.data)
+        print('Loaded portfolio_performance_daily from Supabase')
+    except Exception as e:
+        print(f'Failed to load portfolio_performance_daily from Supabase: {e}')
+
+    try:
+        db_stock_prices_df = db.fetch_all_df('stock_prices')
+        db_stock_prices_dict = db_stock_prices_df.groupby('ticker').apply(lambda x: x.set_index('date')['price'].to_dict()).to_dict()
+        print('Loaded stock_prices from Supabase')
+    except Exception as e:
+        print(f'Failed to load stock_prices from Supabase: {e}')
+
 
     # Loop over each end date, calculate portfolio results, and add to the list
     for end_date in end_dates:
@@ -168,7 +184,7 @@ def calc_daily(analyzer, database, start_date):
                 start_date=start_date.strftime('%Y-%m-%d'), 
                 end_date=end_date_str, 
                 stocks=stock_list,
-                stock_prices=stock_price_data
+                stock_prices=db_stock_prices_dict
             )
             
             for key in result:
@@ -199,8 +215,10 @@ def calc_daily(analyzer, database, start_date):
     portfolio_results_df.to_pickle(cache_file_path)
     portfolio_results_df.to_csv(os.path.join('output', 'portfolio_daily.csv'), index=False)
 
-    #print(portfolio_results_df.tail(40))
-    # Upsert to Supabase
-    database.upsert_to_supabase(portfolio_results_df, 'portfolio_performance_daily', ['ticker', 'end_date'])
+    # Upsert to Supabase with retry mechanism
+    try:
+        db.upsert_to_supabase(portfolio_results_df, 'portfolio_performance_daily', ['ticker', 'end_date'])
+    except Exception as e:
+        print(f'Failed to upsert daily portfolio data to Supabase: {e}')
 
     print('Daily output saved')

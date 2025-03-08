@@ -5,6 +5,7 @@ from helpers.portfolio_analyzer import PortfolioAnalyzer
 from helpers.db import DB
 from helpers.portfolio import calc_monthly, calc_daily
 
+# Intialize PortfolioAnalyzer and DB
 analyzer = PortfolioAnalyzer(transactions)
 db = DB()
 

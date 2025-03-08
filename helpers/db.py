@@ -25,24 +25,31 @@ class DB:
         
         return response
 
-    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, upsert_keys: list):
+    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, upsert_keys: list, max_retries=3):
         """
-        Upsert data to Supabase in bulk.
+        Upsert data to Supabase in bulk with retry mechanism.
 
         :param df: DataFrame containing the data to be upserted
         :param table: Name of the Supabase table to upsert data into
+        :param max_retries: Maximum number of retries for the upsert operation
         """
         # Convert the entire DataFrame to a list of dictionaries for bulk upsert
         data = df.to_dict(orient='records')
         
-        # Perform bulk upsert
-        response = self.supabase.table(table_name).upsert(data).execute()
-
-        # Check response and handle
-        if 'error' in response:
-            print(f"Upsert failed: {response.error_message}")
-        else:
-            print(f"Successfully upserted {len(data)} rows into {table_name} table.")
+        # Perform bulk upsert with retry mechanism
+        for attempt in range(max_retries):
+            try:
+                response = self.supabase.table(table_name).upsert(data).execute()
+                # Check response and handle
+                if 'error' in response:
+                    print(f"Upsert failed: {response.error_message}")
+                else:
+                    print(f"Successfully upserted {len(data)} rows into {table_name} table.")
+                    break
+            except Exception as e:
+                print(f"Upsert attempt {attempt + 1} failed: {e}")
+                if attempt + 1 == max_retries:
+                    print("Max retries reached. Upsert operation failed.")
 
     def store_stock_prices(self, stock_price_data):
         """
@@ -64,4 +71,20 @@ class DB:
             print("Upsert failed (stock prices)", response["error"])
         else:
             print(f"Successfully upserted {len(data)} rows into {table_name} table.")
-    
+
+    def fetch_all_df(self, table_name):
+        """Fetch all rows from a Supabase table using pagination."""
+        all_rows = []
+        page_size = 1000  # Adjust the page size as needed
+        offset = 0
+
+        while True:
+            response = self.supabase.table(table_name).select('*').range(offset, offset + page_size - 1).execute()
+            if response.data:
+                all_rows.extend(response.data)
+                offset += page_size
+            else:
+                break
+
+        return pd.DataFrame(all_rows)
+
