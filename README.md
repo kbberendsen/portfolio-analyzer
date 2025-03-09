@@ -3,6 +3,7 @@ Streamlit dashboard displaying analytics of a DeGiro stock portfolio.
 ![screenshot_portfolio_dashboard](screenshot_portfolio_dashboard.png)
 
 ## Installation
+Before you start, make sure Docker is installed on your machine/server. See the [official Docker installation guide](https://docs.docker.com/engine/install/) based on your OS.
 
 ### Create a new directory for your project
 ```
@@ -12,7 +13,7 @@ cd portfolio-analyzer
 
 ## Download the docker-compose.yml from GitHub
 ```
-curl -O https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/main/docker-compose-prod.yml
+curl -O https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/main/docker-compose-prod.yaml
 ```
 
 ### Create the .env file with required values (replace placeholders)
