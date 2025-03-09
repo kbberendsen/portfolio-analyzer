@@ -8,9 +8,9 @@ from helpers.portfolio import calc_portfolio
 # Start timing
 start_time = time.time()
 
-# Check if 'output' folder is empty, else initial load from db
+# Check if the folder exists and is empty
 output_folder = "output"
-if not os.listdir(output_folder):
+if not os.path.exists(output_folder) or not any(os.scandir(output_folder)):
     print("Output folder is empty. Running db_refresh.py...")
     subprocess.run(["python", "db_refresh.py"])
 else:
