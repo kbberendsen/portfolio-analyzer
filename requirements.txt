@@ -4,3 +4,4 @@ plotly==6.0.0
 streamlit==1.42.2
 yfinance==0.2.54
 supabase==2.13.0
+python-dotenv==1.0.1
