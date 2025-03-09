@@ -5,7 +5,6 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - .:/app
       - ./cronjobs/logs:/app/cronjobs/logs
     environment:
       - SUPABASE_URL=${SUPABASE_URL:?err "SUPABASE_URL is required in .env file."}
