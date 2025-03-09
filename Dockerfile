@@ -33,4 +33,4 @@ RUN crontab /etc/cron.d/db_refresh_cron
 EXPOSE 8501
 
 # Run the cron service in the background, and also start the Streamlit app
-CMD cron && streamlit run app.py --server.port=8501 --server.address=0.0.0.0
+CMD ["sh", "-c", "cron && streamlit run app.py --server.port=8501 --server.address=0.0.0.0"]
