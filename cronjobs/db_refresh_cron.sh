@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the base log directory and current date
-LOG_BASE_DIR="/home/user/cronjobs/logs/portfolio_analyzer"  # Adjust this if necessary
+LOG_BASE_DIR="/app/cronjobs/logs/db_refresh" 
 CURRENT_DATE=$(date +%Y-%m-%d)
 LOG_FILE="$LOG_BASE_DIR/$CURRENT_DATE.log"
 
@@ -16,11 +16,11 @@ echo "===== Log started at $(date +%Y-%m-%d_%H:%M:%S) ====="
 
 # Run db_refresh.py inside the container
 echo "Running db_refresh.py inside the container..."
-docker exec portfolio-analyzer-container python /app/db_refresh.py
+python /app/db_refresh.py
 
 # Run main.py inside the container
 echo "Running main.py inside the container..."
-docker exec portfolio-analyzer-container python /app/main.py
+python /app/main.py
 
 # Add a separator to mark the end of this log entry
 echo "===== Log ended at $(date +%Y-%m-%d_%H:%M:%S) ====="

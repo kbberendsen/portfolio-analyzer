@@ -5,6 +5,8 @@ terminal.txt
 test.py
 test.ipynb
 
+logs/
+
 # Ignore all files in the output folder
 data/*.csv
 

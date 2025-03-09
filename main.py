@@ -8,12 +8,6 @@ from helpers.portfolio import calc_portfolio
 # Start timing
 start_time = time.time()
 
-# Ensure 'output' folder exists
-output_folder = "output"
-if not os.path.exists(output_folder):
-    print("Output folder does not exist. Creating 'output' folder...")
-    os.makedirs(output_folder)
-    
 # Check if 'output' folder is empty, else initial load from db
 output_folder = "output"
 if not os.listdir(output_folder):
