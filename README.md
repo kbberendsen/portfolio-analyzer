@@ -13,7 +13,7 @@ cd portfolio-analyzer
 
 ## Download the docker-compose.yml from GitHub
 ```
-curl -O https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/main/docker-compose-prod.yaml
+curl -O https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/main/docker-compose.yaml
 ```
 
 ### Create the .env file with required values (replace placeholders)
@@ -26,5 +26,11 @@ EOT
 
 ### Build and run the Docker container
 ```
-docker-compose up --build -d
+docker compose up --build -d
+```
+
+### Updating the container
+```
+docker compose down
+docker compose up --force-recreate -d --build
 ```
