@@ -1,12 +1,9 @@
 services:
   app:
-    build: .
-    image: portfolio-analyzer:latest
+    image: ghcr.io/kbberendsen/portfolio-analyzer:latest
     container_name: portfolio-analyzer-container
     ports:
       - "8501:8501"
-    volumes:
-      - .:/app
     environment:
       - SUPABASE_URL=${SUPABASE_URL:?err "SUPABASE_URL is required in .env file."}
       - SUPABASE_KEY=${SUPABASE_KEY:?err "SUPABASE_KEY is required in .env file."}
