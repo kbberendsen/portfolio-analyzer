@@ -10,23 +10,20 @@ WORKDIR /app
 # Copy project files into the container
 COPY . /app
 
-# Copy the cron job file into the container
-COPY cronjobs/db_refresh_cron.sh /app/db_refresh_cron.sh
-
 # Make the cron job script executable
-RUN chmod +x /app/db_refresh_cron.sh
+RUN chmod +x /app/cronjobs/db_refresh_cron.sh
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Add the cron job to crontab (run it at a specific time, e.g., every day at 3 AM)
-RUN echo "0 3 * * * /app/db_refresh_cron.sh" > /etc/cron.d/portfolio_analyzer_cron
+RUN echo "0 3 * * * /app/cronjobs/db_refresh_cron.sh" > /etc/cron.d/portfolio_analyzer_cron
 
 # Give appropriate permissions to the cron file
 RUN chmod 0644 /etc/cron.d/portfolio_analyzer_cron
 
-# Apply the cron job by restarting cron service
+# Apply the cron job by restarting the cron service
 RUN crontab /etc/cron.d/portfolio_analyzer_cron
 
 # Expose the Streamlit port
