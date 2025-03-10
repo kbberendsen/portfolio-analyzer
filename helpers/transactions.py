@@ -58,10 +58,13 @@ if os.path.exists(user_file_path):
     if transactions is None:
         # Fall back to the default file in case of error
         transactions = process_transactions(default_file_path)
-else:
+elif os.path.exists(default_file_path):
     print(f'Processing fallback: {default_file_path}')
     # If the file is not uploaded, use the default file
     transactions = process_transactions(default_file_path)
+else:
+    print("No transactions file found. Initializing empty DataFrame.")
+    transactions = pd.DataFrame(columns=["Date", "Time", "ISIN", "Exchange", "Quantity", "Price", "Cost", "Transaction_costs"])
 
 # Sort transactions chronologically
 transactions = transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)

@@ -4,22 +4,16 @@
 terminal.txt
 test.py
 test.ipynb
-
 logs/
 
-# Ignore all files in the output folder
-data/*.csv
-
-# Ignore all .pkl files in the data folder
-data/*.pkl
-data/*.parquet
+# Ignore all files in the data folder
+data/
 
 # Ignore data backup
 data_backup/
 
 # Ignore in the uploads
-uploads/*.csv
+uploads/
 
 # Ignore all files in the output folder
-output/*.csv
-output/*.parquet
+output/

@@ -16,11 +16,11 @@ echo "===== Log started at $(date +%Y-%m-%d_%H:%M:%S) ====="
 
 # Run db_refresh.py inside the container
 echo "Running db_refresh.py inside the container..."
-python /app/db_refresh.py
+/usr/local/bin/python3 /app/db_refresh.py
 
 # Run main.py inside the container
 echo "Running main.py inside the container..."
-python /app/main.py
+/usr/local/bin/python3 /app/main.py
 
 # Add a separator to mark the end of this log entry
 echo "===== Log ended at $(date +%Y-%m-%d_%H:%M:%S) ====="

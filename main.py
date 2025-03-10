@@ -8,17 +8,20 @@ from helpers.portfolio import calc_portfolio
 # Start timing
 start_time = time.time()
 
-# Check if the folder exists and is empty
-output_folder = "output"
-if not os.path.exists(output_folder) or not any(os.scandir(output_folder)):
-    print("Output folder is empty. Running db_refresh.py...")
-    subprocess.run(["python", "db_refresh.py"])
-else:
-    print("Output folder is not empty. Skipping db_refresh.py...")
-
 # Initialize PortfolioAnalyzer and DB
 analyzer = PortfolioAnalyzer(transactions)
 
+# Check if the folder exists and contains .parquet files
+output_folder = "output"
+parquet_files = [f for f in os.scandir(output_folder) if f.name.endswith(".parquet")]
+
+if not parquet_files:
+    print("No .parquet files found in the output folder. Running db_refresh.py...")
+    subprocess.run(["python", "db_refresh.py"])
+else:
+    print("Parquet files found in the output folder. Skipping db_refresh.py...")
+
+# Main execution function
 calc_portfolio(analyzer, "2020-11-26")
 
 # End timing

@@ -4,6 +4,10 @@ import pandas as pd
 from helpers.transactions import transactions
 
 def calc_portfolio(analyzer, start_date):
+    if transactions.empty:
+        print("No transactions found. Skipping portfolio calculation.")
+        return
+    
     print('Retrieving portfolio data...')
     
     # Fix data types and definitions
@@ -145,6 +149,9 @@ def calc_portfolio(analyzer, start_date):
         .reset_index()
     )
 
+    # Convert 'end_date' to string in 'YYYY-MM-DD' format
+    monthly_results_df['end_date'] = monthly_results_df['end_date'].dt.strftime('%Y-%m-%d')
+
     # Save the updated DataFrame to a Parquet file
-    monthly_results_df.to_parquet(os.path.join('output', 'portfolio_monthly.parquet'), index=False)
+    monthly_results_df.to_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'), index=False)
     print('Monthly output saved locally')

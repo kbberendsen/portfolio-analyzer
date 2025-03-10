@@ -71,8 +71,8 @@ def refresh_data():
         st.error(f"Error occurred while refreshing data: {e}")
 
 def clear_cache():
-    cache_path_monthly = os.path.join('data', 'portfolio_results_monthly.pkl')
-    cache_path_daily = os.path.join('data', 'portfolio_results_daily.pkl')
+    cache_path_monthly = os.path.join('output', 'portfolio_performance_monthly.parquet')
+    cache_path_daily = os.path.join('output', 'portfolio_performance_daily.parquet')
 
     if os.path.isfile(cache_path_monthly):
         os.remove(cache_path_monthly)
@@ -112,7 +112,7 @@ rename_dict = {
 }
 
 # Load monthly and daily data
-df = pd.read_parquet(os.path.join('output', 'portfolio_monthly.parquet'))
+df = pd.read_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'))
 daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
 
 # Rename columns
