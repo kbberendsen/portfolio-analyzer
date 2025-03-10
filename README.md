@@ -8,7 +8,7 @@ Streamlit dashboard displaying analytics of a DeGiro stock portfolio.
 Before you start, make sure Docker is installed on your machine/server. See the [official Docker installation guide](https://docs.docker.com/engine/install/) based on your OS.
 
 ## Supabase
-The app needs a [Supabase database](https://supabase.com/) to store and retrieve stock prices and portfolio performance data from. The Supabase free tier will suffice. Create a new project and create two tables (this can be done in the 'SQL Editor' in the Supabase online dashboard):
+The app needs a [Supabase database](https://supabase.com/) to store and retrieve stock prices and portfolio performance data. The Supabase free tier will suffice. Create a new project and create three tables (this can be done in the 'SQL Editor' in the Supabase online dashboard):
 
 **Daily performance table**
 ```
@@ -29,6 +29,27 @@ CREATE TABLE portfolio_performance_daily (
     PRIMARY KEY (ticker, end_date)
 );
 ```
+
+**Monthly performance table**
+```
+CREATE TABLE portfolio_performance_monthly (
+    product VARCHAR,
+    ticker VARCHAR,
+    quantity INT,
+    start_date DATE,
+    end_date DATE,
+    avg_cost NUMERIC,
+    total_cost NUMERIC,
+    current_value NUMERIC,
+    current_money_weighted_return NUMERIC,
+    realized_return NUMERIC,
+    net_return NUMERIC,
+    current_performance_percentage NUMERIC,
+    net_performance_percentage NUMERIC,
+    PRIMARY KEY (ticker, end_date)
+);
+```
+
 **Stock prices table**
 ```
 CREATE TABLE stock_prices (
@@ -37,7 +58,6 @@ CREATE TABLE stock_prices (
     price NUMERIC,
     PRIMARY KEY (ticker, date)
 );
-
 ```
 After creating the tables, make sure to go to the Supabase project (API) settings to retrieve your __Supabase URL and key__. These will be needed later on in this installation process.
 
@@ -72,3 +92,13 @@ docker compose up --build -d
 docker compose down
 docker compose up --force-recreate -d --build
 ```
+
+## Initial run
+
+### Store Transactions.csv (from DeGiro) in uploads folder
+After building the container, an uploads folder will appear in the created directory (portfolio-analyzer). Before opening the dashboard/app for the first time, make sure to store a Transactions.csv in the uploads folder.
+This transactions file can be found in your DeGiro portfolio. Go to inbox > transactions and select the full date range of all transactions. then click export (csv). Put the csv in the 'uploads' folder.
+Next time you want to update your transactions, the new transactions file can be uploaded through the dashboard. Putting the file in the uploads folder is only necessary before the first run.
+
+### Open the app
+Go to http://localhost:8501/ to see your stock portfolio dashboard! Loading the dashboard for the first time might take a few minutes, depending on the date range of transactions. Subsequent runs will take a few seconds to load.
