@@ -8,13 +8,12 @@ import time
 # Load environment variables from .env file
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
 class DB:
-    def __init__(self, supabase_url=SUPABASE_URL, supabase_key=SUPABASE_KEY):
+    def __init__(self):
+        SUPABASE_URL = os.getenv("SUPABASE_URL")
+        SUPABASE_KEY = os.getenv("SUPABASE_KEY")
         # Initialize the Supabase client
-        self.supabase: Client = create_client(supabase_url, supabase_key)
+        self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
         def _retry_operation(operation, max_retries, *args, **kwargs):
             """Helper method to retry an operation with a specified number of retries."""

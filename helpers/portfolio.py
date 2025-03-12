@@ -30,7 +30,7 @@ def calc_portfolio(analyzer, start_date):
         print('Loaded portfolio_performance_daily from Parquet')
 
         # Remove last 2 days to force refresh (get end of day data)
-        last_2_days = sorted(portfolio_results_df['end_date'].unique())[-2:]
+        last_2_days = sorted(portfolio_results_df['end_date'].unique())[-3:]
         portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
 
     except Exception as e:
