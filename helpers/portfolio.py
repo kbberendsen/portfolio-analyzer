@@ -21,7 +21,7 @@ def calc_portfolio(analyzer, start_date):
 
     # Get recent stock price data for new end_dates
     stock_list = transactions["Stock"].unique().tolist() # All stocks
-    yf_start_date = (today - timedelta(days=60)) #start_date
+    yf_start_date = start_date if len(end_dates) > 60 else (today - timedelta(days=60))
     yf_stock_price_data = analyzer.get_price_at_date(stock_list, yf_start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
 
     # Load existing results from Parquet file
@@ -30,7 +30,7 @@ def calc_portfolio(analyzer, start_date):
         print('Loaded portfolio_performance_daily from Parquet')
 
         # Remove last 2 days to force refresh (get end of day data)
-        last_2_days = sorted(portfolio_results_df['end_date'].unique())[-3:]
+        last_2_days = sorted(portfolio_results_df['end_date'].unique())[-2:]
         portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
 
     except Exception as e:
