@@ -96,10 +96,12 @@ docker compose up --force-recreate -d --build
 ## Initial run
 
 ### Store Transactions.csv (from DeGiro) in uploads folder
-After building the container, an uploads folder will appear in the created directory (portfolio-analyzer). Before opening the dashboard/app for the first time, make sure to store a Transactions.csv in the uploads folder.
-This transactions file can be found in your DeGiro portfolio. Go to inbox > transactions and select the full date range of all transactions. then click export (csv). Put the csv in the 'uploads' folder.
-Next time you want to update your transactions, the new transactions file can be uploaded through the dashboard. Putting the file in the uploads folder is only necessary before the first run.
-When updating the transactions file when you have new transactions, make sure to select the full date range of transactions each time to not miss any previous transactions.
+- After building the container, an uploads folder will appear in the created directory (portfolio-analyzer). 
+-Before opening the dashboard/app for the first time, make sure to store a Transactions.csv in the uploads folder.
+- This transactions file can be found in your DeGiro portfolio. Go to inbox > transactions and select the full date range of all transactions. then click export (csv).
+- Put the csv in the 'uploads' folder.
+- Next time you want to update your transactions, the new transactions file can be uploaded through the dashboard. Putting the file in the uploads folder is only necessary before the first run.
+- When updating the transactions file when you have new transactions, make sure to select the full date range of transactions each time to not miss any previous transactions.
 
 ### Open the app
 Go to http://localhost:8501/ to see your stock portfolio dashboard! Loading the dashboard for the first time might take a few minutes, depending on the date range of transactions. Subsequent runs will take a few seconds to load.
