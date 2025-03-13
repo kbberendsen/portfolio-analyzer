@@ -10,7 +10,7 @@ st.set_page_config(page_title="Portfolio Analysis", page_icon="📊", layout="ce
 st.title("Portfolio Analysis")
 
 # Load portfolio data
-portfolio_file = os.path.join('output', 'portfolio_daily.csv')
+portfolio_file = os.path.join('output', 'portfolio_performance_daily.parquet')
 
 # Dictionary to rename the performance metrics columns for display purposes
 rename_dict = {
@@ -31,7 +31,7 @@ rename_dict = {
 
 if os.path.exists(portfolio_file):
     # Load monthly and daily data
-    df = pd.read_csv(portfolio_file)
+    df = pd.read_parquet(portfolio_file)
     
     # Rename columns
     df = df.rename(columns=rename_dict)

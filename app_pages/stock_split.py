@@ -60,7 +60,7 @@ rename_dict = {
 }
 
 # Load daily data
-daily_df = pd.read_csv(os.path.join('output', 'portfolio_daily.csv'))
+daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
 daily_df = daily_df.rename(columns=rename_dict)
 
 # Get the most recent data
