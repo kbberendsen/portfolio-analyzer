@@ -2,9 +2,6 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, date
 from helpers.ticker_mapping import ticker_to_name
-from helpers.db import DB
-
-db = DB()
 
 class PortfolioAnalyzer:
     def __init__(self, transactions):

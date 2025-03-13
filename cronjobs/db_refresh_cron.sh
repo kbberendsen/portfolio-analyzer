@@ -14,6 +14,9 @@ exec >> "$LOG_FILE" 2>&1
 # Change to the root app directory before running Python scripts
 cd /app
 
+# Load environment variables manually
+export $(grep -v '^#' /app/.env | xargs)
+
 # Add a separator for better readability
 echo "===== Log started at $(date +%Y-%m-%d_%H:%M:%S) ====="
 
