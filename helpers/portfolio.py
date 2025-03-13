@@ -121,6 +121,7 @@ def calc_portfolio(analyzer, start_date):
         portfolio_results_df = pd.concat([portfolio_results_df, new_portfolio_results_df], ignore_index=True)
 
     # Save the updated DataFrame to a Parquet file
+    portfolio_results_df = portfolio_results_df.dropna()
     portfolio_results_df.to_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'), index=False)
     stock_prices_df = pd.DataFrame([
         {"ticker": ticker, "date": date, "price": price if price is not None else 0}

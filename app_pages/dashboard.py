@@ -417,7 +417,7 @@ elif tab_selection == "Daily":
 
         # Add comparison line if another product is selected
         if not daily_compare_product_df.empty:
-            daily_compare_filtered_df = daily_compare_product_df[(daily_compare_product_df['End Date'] >= selected_start_date) & (daily_compare_product_df['End Date'] <= selected_end_date)]
+            daily_compare_filtered_df = daily_compare_product_df[(daily_compare_product_df['End Date'] >= selected_start_date) & (daily_compare_product_df['End Date'] <= selected_end_date)].sort_values(by='End Date')
             daily_fig.add_scatter(x=daily_compare_filtered_df['End Date'], 
                           y=daily_compare_filtered_df[selected_metric], 
                           mode='lines', 
