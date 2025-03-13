@@ -16,12 +16,14 @@ isin_to_ticker = {
     'CA09228F1036': 'BB.TO',
     'US79466L3024': 'CRM',
     'US69608A1088': 'PLTR',
-    'IE00BYVJRP78': 'QDVS.DE'
+    'IE00BYVJRP78': 'QDVS.DE',
+    'NL0010408704': 'FTSWE.DE'
 }
 
 ticker_to_name = {
     'NQSE.DE': 'ETF - Nasdaq',
     '2B7K.DE': 'ETF - World',
+    'FTSWE.DE': 'ETF - World (Eq.W.)',
     'PYPL': 'PayPal',
     'AYEM.DE': 'ETF - Em. Markets',
     'UIMT.AS': 'ETF - Pacific',

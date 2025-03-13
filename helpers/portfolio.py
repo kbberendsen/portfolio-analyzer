@@ -21,7 +21,7 @@ def calc_portfolio(analyzer, start_date):
 
     # Get recent stock price data for new end_dates
     stock_list = transactions["Stock"].unique().tolist() # All stocks
-    yf_start_date = start_date if len(end_dates) > 60 else (today - timedelta(days=60))
+    yf_start_date = start_date if len(end_dates) > 30 else (today - timedelta(days=30))
     yf_stock_price_data = analyzer.get_price_at_date(stock_list, yf_start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
 
     # Load existing results from Parquet file
