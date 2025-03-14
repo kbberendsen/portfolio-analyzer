@@ -9,7 +9,7 @@ Before you start, make sure Docker is installed on your machine/server. See the 
 
 ## Install app
 
-### Create a new directory for your project on your machine/server
+### Create a new directory for your portfolio analyzer on your machine/server
 ```
 mkdir portfolio-analyzer
 cd portfolio-analyzer
@@ -21,7 +21,7 @@ curl -O https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/main/do
 ```
 
 ### Create the .env file
-Create a .env file in the same directory as the downloaded docker-compose file. If you want to use a Supabase database ([optional](#optional-supabase-database)), make sure to enter your URL and key values in the .env file and set `USE_SUPABASE` to `"true"`.
+Create a .env file in the same directory as the downloaded docker-compose file. If you want to use a Supabase database ([optional](#optional-supabase-database)), make sure to enter your URL and key values in the .env file and set `USE_SUPABASE` to `"true"`. If not, leave the default values.
 
 ```
 cat <<EOT > .env
@@ -50,12 +50,12 @@ docker compose up --force-recreate -d --build
 - After building the container, an uploads folder will appear in the created directory (portfolio-analyzer).
 - Before opening the dashboard/app for the first time, make sure to store a Transactions.csv in the uploads folder.
 - This transactions file can be found in your DeGiro portfolio. Go to inbox > transactions and select the full date range of all transactions. then click export (csv).
-- Put the csv in the 'uploads' folder.
+- Put the csv file in the 'uploads' folder.
 - Next time you want to update your transactions, the new transactions file can be uploaded through the dashboard. Putting the file in the uploads folder is only necessary before the first run.
 - When updating the transactions file when you have new transactions, make sure to select the full date range of transactions each time to not miss any previous transactions.
 \
 \
-So before opening the dasbhoard for the first time your directory should look like this:
+So before opening the dashboard for the first time, your directory should look like this:
 
 ```
 .
