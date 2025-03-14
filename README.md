@@ -91,6 +91,7 @@ docker compose up --build -d
 ### Updating the container
 ```
 docker compose down
+docker compose pull
 docker compose up --force-recreate -d --build
 ```
 
