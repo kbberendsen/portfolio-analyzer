@@ -8,6 +8,7 @@ services:
     volumes:
       - ./cronjobs/logs:/app/cronjobs/logs
       - ./uploads:/app/uploads
+      - ./.env:/app/.env
     environment:
       - SUPABASE_URL=${SUPABASE_URL:?err "SUPABASE_URL is required in .env file."}
       - SUPABASE_KEY=${SUPABASE_KEY:?err "SUPABASE_KEY is required in .env file."}

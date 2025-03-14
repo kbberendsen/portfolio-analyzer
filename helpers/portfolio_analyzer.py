@@ -48,6 +48,9 @@ class PortfolioAnalyzer:
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
         end_date = datetime.strptime(end_date, '%Y-%m-%d') + pd.Timedelta(days=1)
 
+        # Delete 'nan' values in stock_price_data
+        stock_price_data = {k: v for k, v in stock_price_data.items() if v == v}
+
         # Filter transactions within the date range
         period_transactions = self.transactions[(self.transactions["Date"] >= start_date) & (self.transactions["Date"] <= end_date) & (self.transactions['Stock'] == stock)]
         previous_transactions = self.transactions[(self.transactions["Date"] < start_date) & (self.transactions['Stock'] == stock)]
@@ -95,9 +98,9 @@ class PortfolioAnalyzer:
         # Calculate current return for remaining holdings
         if quantity_held > 0:
             # Corrected end_date for market open
-            end_date_cor = self.get_first_last_open_day( start_date, end_date, stock_price_data, first=False)
+            end_date_cor = self.get_first_last_open_day(start_date, end_date, stock_price_data, first=False)
             end_date_cor = datetime.strptime(end_date_cor, '%Y-%m-%d')
-
+            
             # Get stock price from pre-fetched data
             end_price = stock_price_data.get(str(end_date_cor.strftime('%Y-%m-%d')), 0)
 
@@ -188,6 +191,6 @@ class PortfolioAnalyzer:
             results[stock] = self.calculate_mwr(stock, start_date, end_date, stock_prices[stock])
 
         # Full portfolio
-        results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results) 
+        results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results)
 
         return results
