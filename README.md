@@ -83,6 +83,8 @@ EOT
 ```
 
 ### Build and run the Docker container
+Before running the app for the first time, make sure to store your Transactions.csv inside the uploads folder ![see Initial Run](#initial-run).
+
 ```
 docker compose up --build -d
 ```
@@ -102,6 +104,18 @@ docker compose up --force-recreate -d --build
 - Put the csv in the 'uploads' folder.
 - Next time you want to update your transactions, the new transactions file can be uploaded through the dashboard. Putting the file in the uploads folder is only necessary before the first run.
 - When updating the transactions file when you have new transactions, make sure to select the full date range of transactions each time to not miss any previous transactions.
+\
+\
+So before the initial run (docker compose up --build -d) your directory should look like this:
+\
+.\
+├── .env\
+├── cronjobs\
+│   └── logs\
+├── docker-compose.yaml\
+└── uploads\
+    └── Transactions.csv
+
 
 ### Open the app
 Go to http://localhost:8501/ to see your stock portfolio dashboard! Loading the dashboard for the first time might take a few minutes, depending on the date range of transactions. Subsequent runs will take a few seconds to load.
