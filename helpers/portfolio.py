@@ -49,6 +49,7 @@ def calc_portfolio(analyzer, start_date):
         print('Loaded stock_prices from Parquet')
     except Exception as e:
         print(f'Failed to load stock_prices from Parquet: {e}')
+        stock_prices_dict = {}
 
 
     # Append fresh stock price data to stock_prices_dict
