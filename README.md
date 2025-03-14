@@ -77,6 +77,7 @@ curl -O https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/main/do
 ### Create the .env file with required values (replace placeholders)
 ```
 cat <<EOT > .env
+USE_SUPABASE=false
 SUPABASE_URL=https://your-supabase-url
 SUPABASE_KEY=your-supabase-api-key
 EOT
