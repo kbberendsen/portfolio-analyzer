@@ -9,8 +9,9 @@ services:
       - ./uploads:/app/uploads
       - ./.env:/app/.env
     environment:
-      - SUPABASE_URL=${SUPABASE_URL:?err "SUPABASE_URL is required in .env file."}
-      - SUPABASE_KEY=${SUPABASE_KEY:?err "SUPABASE_KEY is required in .env file."}
+      - USE_SUPABASE=${USE_SUPABASE:-false}
+      - SUPABASE_URL=${SUPABASE_URL:?err "For using Supabase, SUPABASE_URL is required in .env file."}
+      - SUPABASE_KEY=${SUPABASE_KEY:?err "For using Supabase, SUPABASE_KEY is required in .env file."}
     env_file:
       - .env
     restart: unless-stopped

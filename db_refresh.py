@@ -1,10 +1,17 @@
 import os
 import pandas as pd
 from helpers.db import DB
- 
-db = DB()
 
-def db_refresh(db):
+def db_refresh():
+     # Check if Supabase should be used
+    use_supabase = os.getenv("USE_SUPABASE", "false").lower() == "true"
+    if not use_supabase:
+        print("Supabase is disabled. Skipping database operations.")
+        return
+
+    # Init db
+    db = DB()
+
     # Check if Parquet files exist
     daily_portfolio_parquet_path = 'output/portfolio_performance_daily.parquet'
     monthly_portfolio_parquet_path = 'output/portfolio_performance_monthly.parquet'
@@ -60,4 +67,4 @@ def db_refresh(db):
         db_stock_prices_df = pd.read_parquet(stock_prices_parquet_path)
         db.upsert_to_supabase(db_stock_prices_df, 'stock_prices')
 
-db_refresh(db)
+db_refresh()
