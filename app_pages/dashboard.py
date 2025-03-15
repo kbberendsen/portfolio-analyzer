@@ -69,7 +69,7 @@ def refresh_data():
             st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
     except subprocess.CalledProcessError as e:
         st.error(f"Error occurred while refreshing data: {e}")
-
+        
 def clear_cache():
     cache_path_monthly = os.path.join('output', 'portfolio_performance_monthly.parquet')
     cache_path_daily = os.path.join('output', 'portfolio_performance_daily.parquet')
