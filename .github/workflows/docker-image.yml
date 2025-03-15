@@ -22,11 +22,8 @@ jobs:
         password: ${{ secrets.GENERAL_TOKEN }}
         registry: ghcr.io
 
-    - name: Build the Docker image
-      run: |
-        docker compose -f docker-compose-dev.yaml up --force-recreate -d --build
-        docker tag portfolio-analyzer:latest ghcr.io/kbberendsen/portfolio-analyzer:latest
-    
-    - name: Push the Docker image to GitHub Container Registry
-      run: |
-        docker push ghcr.io/kbberendsen/portfolio-analyzer:latest
+    - name: Build Docker image from main branch
+      run: docker build -t ghcr.io/kbberendsen/portfolio-analyzer:latest .
+
+    - name: Push Docker image to GitHub Container Registry
+      run: docker push ghcr.io/kbberendsen/portfolio-analyzer:latest
