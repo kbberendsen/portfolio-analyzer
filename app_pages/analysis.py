@@ -50,7 +50,7 @@ if os.path.exists(portfolio_file):
         selected_date = pd.to_datetime(selected_date)
 
         # Metric selection
-        metric_options = ['Current Value (€)', 'Net Return (€)', 'Total Cost (€)']
+        metric_options = ['Net Return (€)', 'Current Value (€)', 'Total Cost (€)']
         selected_metric = st.sidebar.selectbox("Select a Performance Metric", metric_options)
 
         # Keep going back one day if no data is found
