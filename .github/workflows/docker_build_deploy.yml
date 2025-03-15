@@ -45,7 +45,7 @@ jobs:
 
     - name: SSH into VPS and pull & run Docker image
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'  # SSH into the VPS
+        ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           echo "Starting deployment process..."
 
           # Navigate to the correct directory
@@ -62,11 +62,11 @@ jobs:
 
           # Start the new container
           echo "Starting the new container..."
-          docker-compose up -d --build  # Build and run the new container in detached mode
+          docker-compose up --force-recreate -d --build # Build and run the new container in detached mode
 
           # Remove unused images and containers
           echo "Removing unused images and containers..."
           docker system prune -f  # Clean up unused Docker images and containers
 
           echo "Deployment complete."
-        EOF  # End SSH session
+        EOF
