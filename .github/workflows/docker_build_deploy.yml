@@ -58,11 +58,11 @@ jobs:
           
           # Stop any running containers
           echo "Stopping any running containers..."
-          docker-compose down  # Stop and remove any running containers
+          docker compose down  # Stop and remove any running containers
 
           # Start the new container
           echo "Starting the new container..."
-          docker-compose up --force-recreate -d --build # Build and run the new container in detached mode
+          docker compose up --force-recreate -d --build # Build and run the new container
 
           # Remove unused images and containers
           echo "Removing unused images and containers..."
