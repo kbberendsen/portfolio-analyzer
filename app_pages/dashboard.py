@@ -5,11 +5,48 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import subprocess
 import os
+from dotenv import load_dotenv
 
 # Set the page title for the browser tab
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:")
 
 st.title("Stock Portfolio Dashboard")
+
+# Load .env file for environment variables
+try:
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if not os.path.exists(env_path):
+        raise FileNotFoundError(f"File not found: {env_path}")
+    
+    load_dotenv(env_path)    
+except Exception as e:
+    print(f"Error loading environment variables: {e}")
+    st.error("Error loading environment variables. Please check if the .env file is in the app directory.")
+    st.markdown(
+        "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
+    )
+
+# Transactions file path
+csv_files = [f for f in os.listdir("uploads") if f.endswith(".csv")]
+
+# Check for transaction file in the uploads folder
+if not csv_files:
+    st.warning("No DeGiro transaction data found. Please upload a CSV file to proceed. Check GitHub project documention for instructions.")
+    st.markdown(
+        "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
+    )
+
+    uploaded_file = st.file_uploader("Upload your DeGiro transactions CSV file", type=["csv"])
+    
+    if uploaded_file:
+        os.makedirs("uploads", exist_ok=True)  # Ensure the uploads folder exists
+        file_path = os.path.join('uploads', 'Transactions.csv')
+
+        df = pd.read_csv(uploaded_file)
+        df.to_csv(file_path, index=False)
+        st.success("File uploaded successfully! Please reload the page.")
+    
+    st.stop()  # Stop execution if no data is available
 
 # Placeholder for the loading spinner while refreshing data on startup
 loading_placeholder = st.empty()
@@ -73,16 +110,15 @@ def refresh_data():
 def clear_cache():
     cache_path_monthly = os.path.join('output', 'portfolio_performance_monthly.parquet')
     cache_path_daily = os.path.join('output', 'portfolio_performance_daily.parquet')
+    cache_path_stock_prices = os.path.join('output', 'stock_prices.parquet')
+    cached_files = [cache_path_monthly, cache_path_daily, cache_path_stock_prices]
 
-    if os.path.isfile(cache_path_monthly):
-        os.remove(cache_path_monthly)
-        print(f"{cache_path_monthly} has been deleted.")
+    for file_path in cached_files:
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+            print(f"{file_path} has been deleted.")
 
-    if os.path.isfile(cache_path_daily):
-        os.remove(cache_path_daily)
-        print(f"{cache_path_daily} has been deleted.")
-
-    st.info("Data cleared. Use 'Refresh Data' to update data. This will take a few minutes.")
+    st.info("Cached data cleared. Refreshing data. This will take some time.")
 
 # Startup loading spinner
 if not st.session_state.startup_refresh:
@@ -441,7 +477,24 @@ with st.sidebar:
 
     # Refresh Button to update the CSV
     if st.button('Refresh Data'):
-        refresh_data()
+        st.session_state.startup_refresh = False
+        st.rerun()
+
+    # Refresh Button to refresh database if env variable is set to true
+    if os.getenv("USE_SUPABASE", "true").lower() == "true":
+        if st.button('Refresh Database'):
+            st.info("Upserting cached data to database and refreshing locally cached data. This will take some time.")
+            # Run the 'db_refresh.py' script to update the CSV
+            try:
+                subprocess.run(['python', 'db_refresh.py'], check=True)
+                if st.session_state.startup_refresh:
+                    st.success(f"Database refreshed successfully! (Last refresh: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
+            except subprocess.CalledProcessError as e:
+                st.error(f"Error occurred while refreshing database: {e}")
+            st.session_state.startup_refresh = False
+            st.rerun()
     
     if st.button('Clear Cached Data', type="primary"):
         clear_cache()
+        st.session_state.startup_refresh = False
+        st.rerun()

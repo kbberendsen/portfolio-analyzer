@@ -21,7 +21,7 @@ curl -O https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/main/do
 ```
 
 ### Create the .env file
-Create a .env file in the same directory as the downloaded docker-compose file. If you want to use a Supabase database ([optional](#optional-supabase-database)), make sure to enter your URL and key values in the .env file and set `USE_SUPABASE` to `"true"`. If not, leave the default values.
+Create a `.env` file in the same directory as the downloaded docker-compose file. If you want to use a Supabase database ([optional](#optional-supabase-database)), make sure to enter your URL and key values in the .env file and set `USE_SUPABASE` to `"true"`. If not, leave the default values.
 
 ```
 cat <<EOT > .env
@@ -45,17 +45,21 @@ docker compose up --force-recreate -d --build
 ```
 
 ## Initial run
+Go to http://localhost:8501/ to see your stock portfolio dashboard! After running the app, the streamlit port (8501) can be redirected to another domain if desired.
 
-### Store Transactions.csv (from DeGiro) in uploads folder before opening the dashboard for the first time
-- After building the container, an uploads folder will appear in the created directory (portfolio-analyzer).
-- Before opening the dashboard/app for the first time, make sure to store a Transactions.csv in the uploads folder.
+### Upload first Transactions.csv (from DeGiro)
+- When opening the dashboard for the first time, upload a Transactions.csv file.
 - This transactions file can be found in your DeGiro portfolio. Go to inbox > transactions and select the full date range of all transactions. then click export (csv).
-- Put the csv file in the 'uploads' folder.
-- Next time you want to update your transactions, the new transactions file can be uploaded through the dashboard. Putting the file in the uploads folder is only necessary before the first run.
-- When updating the transactions file when you have new transactions, make sure to select the full date range of transactions each time to not miss any previous transactions.
-\
-\
-So before opening the dashboard for the first time, your directory should look like this:
+- Upload the csv in the dashboard. The uploaded file will be stored in the 'uploads' directory in the portfolio-analyzer directory.
+- Reload the page. Loading the dashboard for the first time might take a few minutes, depending on the date range of transactions Subsequent runs will take a few seconds to load.
+
+### Updating Transactions.csv
+- After new transactions, download the new transactions file from DeGiro. The old file will be overwritten so make sure to select the full date range of transactions each time to not miss any previous transactions.
+- To update the transactions data in the dashboard, upload the new transactions file through the sidebar in the dashboard.
+- Reload the page.
+
+### Directory structure
+After uploading your transaction csv file to the dashboard for the first time, your app directory should look like this:
 
 ```
 .
@@ -67,11 +71,8 @@ So before opening the dashboard for the first time, your directory should look l
     └── Transactions.csv
 ```
 
-### Open the app
-Go to http://localhost:8501/ to see your stock portfolio dashboard! Loading the dashboard for the first time might take a few minutes, depending on the date range of transactions. Subsequent runs will take a few seconds to load.
-
 ## Optional: Supabase database
-The app can utilize a [Supabase database](https://supabase.com/) to store and retrieve stock prices and portfolio performance data in the cloud. The Supabase free tier will suffice. Create a new project and create three tables (this can be done in the 'SQL Editor' in the Supabase online dashboard):
+The app can utilize a [Supabase database](https://supabase.com/) to store and retrieve your portfolio performance data in the cloud. The Supabase free tier will suffice. Create a new project and create three tables (this can be done in the 'SQL Editor' in the Supabase online dashboard):
 
 **Daily performance table**
 ```
