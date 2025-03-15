@@ -1,0 +1,72 @@
+name: Docker Build and Deploy
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+
+  # Job to build and push the Docker image
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2 
+      with:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GENERAL_TOKEN }}
+        registry: ghcr.io
+
+    - name: Build Docker image from main branch
+      run: docker build -t ghcr.io/kbberendsen/portfolio-analyzer:latest .
+
+    - name: Push Docker image to GitHub Container Registry
+      run: docker push ghcr.io/kbberendsen/portfolio-analyzer:latest
+
+  # Job to deploy the app on the VPS
+  deploy:
+    needs: build
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: SSH into VPS and pull & run Docker image
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'  # SSH into the VPS
+          echo "Starting deployment process..."
+
+          # Navigate to the correct directory
+          echo "Navigating to directory..."
+          cd ~/projects/portfolio-analyzer  # Change to the directory where the Docker Compose file is located
+          
+          # Pull the latest Docker image
+          echo "Pulling the latest Docker image..."
+          docker pull ghcr.io/kbberendsen/portfolio-analyzer:latest  # Pull the latest image from the registry
+          
+          # Stop any running containers
+          echo "Stopping any running containers..."
+          docker-compose down  # Stop and remove any running containers
+
+          # Start the new container
+          echo "Starting the new container..."
+          docker-compose up -d --build  # Build and run the new container in detached mode
+
+          # Remove unused images and containers
+          echo "Removing unused images and containers..."
+          docker system prune -f  # Clean up unused Docker images and containers
+
+          echo "Deployment complete."
+        EOF  # End SSH session
