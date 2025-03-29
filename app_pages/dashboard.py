@@ -412,7 +412,7 @@ elif tab_selection == "Daily":
         else:
             top_net_return_ytd_delta_eur = 0
             top_net_return_ytd_delta_per = 0
-        
+
         # Adjust displayed string based on metric type
         if '€' in selected_metric:
             selected_metric_value = f'€ {top_selected_metric_end}'
@@ -430,7 +430,9 @@ elif tab_selection == "Daily":
             with col1:
                 st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta)
             with col2:
-                if selected_metric == 'Net Performance (%)':
+                if top_total_cost_ytd_start == 0:
+                    pass
+                elif selected_metric == 'Net Performance (%)':
                     st.metric(label="YTD - Net Performance (%)", value=f"{top_net_return_ytd_delta_per} %", delta=f"{top_net_return_ytd_delta_eur}")
                 else:
                     st.metric(label="YTD - Net Return (€)", value=f" {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %")
