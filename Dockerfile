@@ -1,5 +1,5 @@
 # Use an official Python runtime as a base image
-FROM python:3.12
+FROM python:3.12-slim
 
 # Install cron and other dependencies
 RUN apt-get update && apt-get install -y cron
