@@ -98,6 +98,8 @@ def refresh_data():
         file_path = os.path.join('uploads', 'Transactions.csv')
         new_data.to_csv(file_path, index=False)
         st.success(f"Data saved to {file_path}")
+
+        st.rerun()
     
     # Run the 'main.py' script to update the CSV
     try:
@@ -106,6 +108,8 @@ def refresh_data():
             st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
     except subprocess.CalledProcessError as e:
         st.error(f"Error occurred while refreshing data: {e}")
+
+
         
 def clear_cache():
     cache_path_monthly = os.path.join('output', 'portfolio_performance_monthly.parquet')
@@ -248,7 +252,7 @@ if tab_selection == "Monthly":
         if top_net_return_start != 0:
             top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
             top_net_return_delta_eur = f"+€ {abs(top_net_return_delta)}" if top_net_return_delta > 0 else f"-€ {abs(top_net_return_delta)}"
-            top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/(top_net_return_start))*100, 2)
+            top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/abs(top_net_return_start))*100, 2)
         else:
             top_current_delta_eur = 0
             top_net_return_delta_per = 0
@@ -335,7 +339,7 @@ elif tab_selection == "Daily":
         if top_current_value_start != 0:
             top_current_value_delta = round((top_current_value_end-top_current_value_start), 2)
             top_current_value_delta_eur = f"+€ {abs(top_current_value_delta)}" if top_current_value_delta > 0 else f"-€ {abs(top_current_value_delta)}"
-            top_current_value_delta_per = round(((top_current_value_end-top_current_value_start)/(top_current_value_start))*100, 2)
+            top_current_value_delta_per = round(((top_current_value_end-top_current_value_start)/abs(top_current_value_start))*100, 2)
         else:
             top_current_value_delta_eur = 0
             top_current_value_delta_per = 0
@@ -347,7 +351,7 @@ elif tab_selection == "Daily":
         if top_current_return_start != 0:
             top_current_return_delta = round((top_current_return_end-top_current_return_start), 2)
             top_current_return_delta_eur = f"+€ {abs(top_current_return_delta)}" if top_current_return_delta > 0 else f"-€ {abs(top_current_return_delta)}"
-            top_current_return_delta_per = round(((top_current_return_end-top_current_return_start)/(top_current_return_start))*100, 2)
+            top_current_return_delta_per = round(((top_current_return_end-top_current_return_start)/abs(top_current_return_start))*100, 2)
         else:
             top_current_return_delta_eur = 0
             top_current_return_delta_per = 0
@@ -359,7 +363,7 @@ elif tab_selection == "Daily":
         if top_net_return_start != 0:
             top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
             top_net_return_delta_eur = f"+€ {abs(top_net_return_delta)}" if top_net_return_delta > 0 else f"-€ {abs(top_net_return_delta)}"
-            top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/(top_net_return_start))*100, 2)
+            top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/abs(top_net_return_start))*100, 2)
         else:
             top_net_return_delta_eur = 0
             top_net_return_delta_per = 0
@@ -385,7 +389,7 @@ elif tab_selection == "Daily":
         if top_selected_metric_start != 0:
             top_selected_metric_delta = round((top_selected_metric_end-top_selected_metric_start), 2)
             top_selected_metric_delta_eur = f"+€ {abs(top_selected_metric_delta)}" if top_selected_metric_delta > 0 else f"-€ {abs(top_selected_metric_delta)}"
-            top_selected_metric_delta_per = round(((top_selected_metric_end-top_selected_metric_start)/(top_selected_metric_start))*100, 2)
+            top_selected_metric_delta_per = round(((top_selected_metric_end-top_selected_metric_start)/abs(top_selected_metric_start))*100, 2)
         else:
             top_selected_metric_delta_eur = 0
             top_selected_metric_delta_per = 0
@@ -480,7 +484,7 @@ with st.sidebar:
     # Refresh Button to update the CSV
     if st.button('Refresh Data'):
         st.session_state.startup_refresh = False
-        st.rerun()
+        refresh_data()
 
     # Refresh Button to refresh database if env variable is set to true
     if os.getenv("USE_SUPABASE", "true").lower() == "true":
