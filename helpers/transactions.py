@@ -11,18 +11,26 @@ def process_transactions(file_path):
     try:
         # Attempt to read the file
         df = pd.read_csv(file_path)
-        
+
+        # Rename based on column index
+        df.columns.values[[0, 1, 3, 4, 6, 7, 11, 14]] = [
+            'Date', 'Time', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs'
+        ]
+
+        # Select and assign the renamed columns
+        df_adj = df[['Date', 'Time', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs']]
+
         # Select and rename the columns
-        df_adj = df[['Datum', 'Tijd', 'ISIN', 'Beurs', 'Aantal', 'Koers', 'Waarde', 'Transactiekosten en/of']].rename(columns={
-            'Datum': 'Date',
-            'Tijd': 'Time',
-            'ISIN': 'ISIN',
-            'Beurs': 'Exchange',
-            'Aantal': 'Quantity',
-            'Koers': 'Price',
-            'Waarde': 'Cost',
-            'Transactiekosten en/of': 'Transaction_costs'
-        })
+        # df_adj = df[['Datum', 'Tijd', 'ISIN', 'Beurs', 'Aantal', 'Koers', 'Waarde', 'Transactiekosten en/of']].rename(columns={
+        #     'Datum': 'Date',
+        #     'Tijd': 'Time',
+        #     'ISIN': 'ISIN',
+        #     'Beurs': 'Exchange',
+        #     'Aantal': 'Quantity',
+        #     'Koers': 'Price',
+        #     'Waarde': 'Cost',
+        #     'Transactiekosten en/of': 'Transaction_costs'
+        # })
         
         # Map the ISIN values to the new Ticker column
         df_adj['Stock'] = df_adj['ISIN'].map(isin_to_ticker).astype(str)
