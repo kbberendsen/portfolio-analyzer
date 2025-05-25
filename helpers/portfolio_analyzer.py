@@ -57,6 +57,9 @@ class PortfolioAnalyzer:
 
         all_transactions = pd.concat([previous_transactions, period_transactions], ignore_index=True)
 
+        # Sort transactions by date and time
+        all_transactions.sort_values(by=["Date", "Time"], inplace=True)
+
         # Load ISIN mapping from JSON
         with open('output/isin_mapping.json', 'r') as f:
             isin_mapping = json.load(f)
