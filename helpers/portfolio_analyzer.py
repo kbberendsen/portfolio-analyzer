@@ -1,7 +1,7 @@
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, date
-from helpers.ticker_mapping import ticker_to_name
+import json
 
 class PortfolioAnalyzer:
     def __init__(self, transactions):
@@ -57,8 +57,18 @@ class PortfolioAnalyzer:
 
         all_transactions = pd.concat([previous_transactions, period_transactions], ignore_index=True)
 
-        # Product name
-        product = ticker_to_name.get(stock) 
+        # Load ISIN mapping from JSON
+        with open('output/isin_mapping.json', 'r') as f:
+            isin_mapping = json.load(f)
+
+        # Build a reverse map: ticker -> display_name
+        ticker_to_name = {
+            data.get("ticker"): data.get("display_name", "")
+            for data in isin_mapping.values()
+            if "ticker" in data
+        }
+
+        product = ticker_to_name.get(stock, "")
         
         # Average cost
         if not all_transactions.empty:
@@ -192,5 +202,5 @@ class PortfolioAnalyzer:
 
         # Full portfolio
         results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results)
-        
+
         return results
