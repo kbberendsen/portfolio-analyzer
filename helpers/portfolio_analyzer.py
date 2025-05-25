@@ -122,7 +122,7 @@ class PortfolioAnalyzer:
         return {
             "product": product,
             "ticker": stock,
-            "quantity": quantity_held,
+            "quantity": int(quantity_held),
             "start_date": start_date.strftime('%Y-%m-%d'),
             "end_date": end_date.strftime('%Y-%m-%d'),
             "avg_cost": round(avg_cost, 2),
@@ -167,7 +167,7 @@ class PortfolioAnalyzer:
         return {
                 "product": "Full portfolio",
                 "ticker": "FULL",
-                "quantity": quantity,
+                "quantity": int(quantity),
                 "start_date": start_date,
                 "end_date": end_date,
                 "avg_cost": round(avg_cost_port, 2),
@@ -192,5 +192,5 @@ class PortfolioAnalyzer:
 
         # Full portfolio
         results['portfolio'] = self.calculate_total_portfolio_performance(start_date, end_date, results)
-
+        
         return results

@@ -44,6 +44,9 @@ def process_transactions(file_path):
         
         # Fill NA in transaction costs
         df_adj['Transaction_costs'] = df_adj['Transaction_costs'].fillna(0)
+
+        # Set Quantity to int type
+        df_adj["Quantity"] = df_adj["Quantity"].astype(int)
         
         return df_adj
     except Exception as e:
