@@ -132,8 +132,6 @@ def refresh_data():
             st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
     except subprocess.CalledProcessError as e:
         st.error(f"Error occurred while refreshing data: {e}")
-
-
         
 def clear_cache():
     cache_path_monthly = os.path.join('output', 'portfolio_performance_monthly.parquet')
@@ -395,11 +393,11 @@ elif tab_selection == "Daily":
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric(label="Current Value on Last Day", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per} % | {top_current_value_delta_eur}")
+            st.metric(label="Current Value on Last Day", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per} % | {top_current_value_delta_eur}", border=True)
         with col2:
-            st.metric(label="Current Return on Last Day", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per} % | {top_current_return_delta_eur}")
+            st.metric(label="Current Return on Last Day", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per} % | {top_current_return_delta_eur}", border=True)
         with col3:
-            st.metric(label="Net Return on Last Day", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per} % | {top_net_return_delta_eur}")
+            st.metric(label="Net Return on Last Day", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per} % | {top_net_return_delta_eur}", border=True)
         
         st.divider()
     
@@ -457,18 +455,18 @@ elif tab_selection == "Daily":
         if ('Net' in selected_metric) and (str(datetime.now().year) in str(selected_end_date)):
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta)
+                st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=True)
             with col2:
                 if top_total_cost_ytd_start == 0:
                     pass
                 elif selected_metric == 'Net Performance (%)':
-                    st.metric(label="YTD - Net Performance (%)", value=f"{top_net_return_ytd_delta_per} %", delta=f"{top_net_return_ytd_delta_eur}")
+                    st.metric(label="YTD - Net Performance (%)", value=f"{top_net_return_ytd_delta_per} %", delta=f"{top_net_return_ytd_delta_eur}", border=True)
                 else:
-                    st.metric(label="YTD - Net Return (€)", value=f" {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %")
+                    st.metric(label="YTD - Net Return (€)", value=f" {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %", border=True)
             with col3:
                 pass
         else:
-            st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta)
+            st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=True)
 
         # Plot
         daily_fig = px.line()
