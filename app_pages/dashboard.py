@@ -66,7 +66,10 @@ if os.path.exists(mapping_path):
         st.warning("Ticker mapping is empty. Please update the mappings on the 'ticker mapping' page before proceeding.")
         st.stop()
 else:
-    st.warning("ISIN mapping file not found.")
+    try:
+        subprocess.run(['python', 'helpers/transactions.py'], check=True)
+    except:
+        st.error("Error running the transactions script to generate ISIN mapping.")
     st.stop()
 
 # Placeholder for the loading spinner while refreshing data on startup

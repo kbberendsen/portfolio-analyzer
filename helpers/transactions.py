@@ -6,6 +6,8 @@ import json
 user_file_path = os.path.join('uploads', 'Transactions.csv')
 default_file_path = os.path.join('data', 'Transactions.csv')
 
+mapping_path = os.path.join('output', 'isin_mapping.json')
+
 # Function to process transaction data
 def process_transactions(file_path):
     try:
@@ -20,13 +22,17 @@ def process_transactions(file_path):
         # Select and assign the renamed columns
         df_adj = df[['Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs']]
         
-        # Load mapping from JSON
-        with open('output/isin_mapping.json', 'r') as f:
-            isin_mapping = json.load(f)
+        # Check if mapping file exists
+        if os.path.exists(mapping_path):
+            with open(mapping_path, 'r') as f:
+                isin_mapping = json.load(f)
 
-        # Map ISIN to ticker (Stock) and Display Name (Product)
-        df_adj['Stock'] = df_adj['ISIN'].apply(lambda isin: isin_mapping.get(isin, {}).get("ticker", "")).astype(str)
-        df_adj['Product'] = df_adj['ISIN'].apply(lambda isin: isin_mapping.get(isin, {}).get("display_name", "")).astype(str)
+            df_adj['Stock'] = df_adj['ISIN'].apply(lambda isin: isin_mapping.get(isin, {}).get("ticker", "")).astype(str)
+            df_adj['Product'] = df_adj['ISIN'].apply(lambda isin: isin_mapping.get(isin, {}).get("display_name", "")).astype(str)
+        else:
+            # If file doesn't exist, set both columns to None
+            df_adj['Stock'] = None
+            df_adj['Product'] = None
 
         # Filter out rows where ticker is missing
         df_adj = df_adj[df_adj['Stock'] != '']
@@ -71,7 +77,6 @@ else:
 transactions = transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
 
 # Generate ISIN mapping json
-output_path = os.path.join('output', 'isin_mapping.json')
 
 # Ensure required columns are present
 required_columns = {'ISIN', 'Product Name DeGiro'}
@@ -79,8 +84,8 @@ if not required_columns.issubset(transactions.columns):
     raise ValueError("Required columns 'ISIN' and 'Product Name DeGiro' not found in DataFrame.")
 
 # Load existing mapping if it exists
-if os.path.exists(output_path):
-    with open(output_path, 'r') as f:
+if os.path.exists(mapping_path):
+    with open(mapping_path, 'r') as f:
         existing_mapping = json.load(f)
 else:
     existing_mapping = {}
@@ -105,5 +110,5 @@ existing_mapping["FULL_PORTFOLIO"] = {
 }
 
 # Save the updated mapping
-with open(output_path, 'w') as f:
+with open(mapping_path, 'w') as f:
     json.dump(existing_mapping, f, indent=4)
