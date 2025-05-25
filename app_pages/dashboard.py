@@ -167,6 +167,7 @@ rename_dict = {
     'end_date': 'End Date',
     'avg_cost': 'Average Cost (€)',
     'total_cost': 'Total Cost (€)',
+    'transaction_costs': 'Transaction Costs (€)',
     'current_value': 'Current Value (€)',
     'current_money_weighted_return': 'Current Money Weighted Return (€)',
     'realized_return': 'Realized Return (€)',

@@ -83,6 +83,7 @@ class PortfolioAnalyzer:
         realized_return = 0
         quantity_held = 0
         purchase_cost = 0
+        transaction_costs_total = 0
 
         # Track each transaction
         for _, row in all_transactions.iterrows():
@@ -96,12 +97,14 @@ class PortfolioAnalyzer:
                 purchase_cost += transaction_value
                 quantity_held += quantity
                 realized_return += transaction_costs
+                transaction_costs_total += -1 * transaction_costs
 
             elif action == "SELL":
                 # Calculate realized return based on average purchase cost
                 if quantity_held > 0:
                     stock_transactions = all_transactions[all_transactions['Stock']==row_stock]
                     avg_cost_stock = -1 * (stock_transactions[stock_transactions['Action'].isin(['BUY'])]['Cost'].sum() / stock_transactions[stock_transactions['Action'].isin(['BUY'])]['Quantity'].sum())
+                    transaction_costs_total += -1 * transaction_costs
 
                     quantity_held -= abs(quantity)
                     
@@ -140,6 +143,7 @@ class PortfolioAnalyzer:
             "end_date": end_date.strftime('%Y-%m-%d'),
             "avg_cost": round(avg_cost, 2),
             "total_cost": round(purchase_cost, 2),
+            "transaction_costs": round(transaction_costs_total, 2),
             "current_value": round(current_value, 2),
             "current_money_weighted_return": round(current_return, 2),
             "realized_return": round(realized_return, 2),
@@ -153,6 +157,7 @@ class PortfolioAnalyzer:
         # Initialize accumulators for the metrics
         quantity = 0
         purchase_cost = 0
+        transaction_costs_total = 0
         current_value = 0
         current_return = 0
         realized_return = 0
@@ -162,6 +167,7 @@ class PortfolioAnalyzer:
         for stock in stock_results.values():
             quantity += stock.get('quantity', 0)
             purchase_cost += stock.get('total_cost', 0)
+            transaction_costs_total += stock.get('transaction_costs', 0)
             current_value += stock.get('current_value', 0)
             current_return += stock.get('current_money_weighted_return', 0)
             realized_return += stock.get('realized_return', 0)
@@ -185,6 +191,7 @@ class PortfolioAnalyzer:
                 "end_date": end_date,
                 "avg_cost": round(avg_cost_port, 2),
                 "total_cost": round(purchase_cost, 2),
+                "transaction_costs": round(transaction_costs_total, 2),
                 "current_value": round(current_value, 2),
                 "current_money_weighted_return": round(current_return, 2),
                 "realized_return": round(realized_return, 2),

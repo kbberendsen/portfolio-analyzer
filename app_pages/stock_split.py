@@ -51,6 +51,7 @@ rename_dict = {
     'end_date': 'End Date',
     'avg_cost': 'Average Cost (€)',
     'total_cost': 'Total Cost (€)',
+    'transaction_costs': 'Transaction Costs (€)',
     'current_value': 'Current Value (€)',
     'current_money_weighted_return': 'Current Money Weighted Return (€)',
     'realized_return': 'Realized Return (€)',
@@ -78,8 +79,7 @@ to_invest = st.number_input('Amount to invest', value=350, step=10)
 current_products = sorted(daily_df_filtered['Product'].unique())
 included_products = st.multiselect(
     "Which stocks should be included in the split calculation?",
-    current_products,
-    ['ETF - World', 'ETF - Nasdaq']
+    current_products
 )
 
 # Prepare the split DataFrame for user input and filter by selected products

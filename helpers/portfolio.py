@@ -37,7 +37,7 @@ def calc_portfolio(analyzer, start_date):
     except Exception as e:
         print(f'Failed to load portfolio_performance_daily from Parquet: {e}')
         portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
-                                                        'avg_cost', 'total_cost', 'current_value', 
+                                                        'avg_cost', 'total_cost', 'transaction_costs', 'current_value', 
                                                         'current_money_weighted_return', 'realized_return', 
                                                         'net_return', 'current_performance_percentage', 
                                                         'net_performance_percentage'])
