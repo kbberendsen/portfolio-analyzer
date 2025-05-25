@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta
 import pandas as pd
 from helpers.transactions import transactions
+import json
 
 def calc_portfolio(analyzer, start_date):
     if transactions.empty:
@@ -124,7 +125,21 @@ def calc_portfolio(analyzer, start_date):
     # Save the updated DataFrame to a Parquet file
     portfolio_results_df = portfolio_results_df.dropna()
     portfolio_results_df['quantity'] = portfolio_results_df['quantity'].astype(int)
-    
+
+    # Update product column based on ISIN mapping json
+    with open('output/isin_mapping.json', 'r') as f:
+        isin_mapping = json.load(f)
+
+    # Build a reverse map: ticker -> display_name
+    ticker_to_name = {
+        data.get("ticker"): data.get("display_name", "")
+        for data in isin_mapping.values()
+        if "ticker" in data
+    }
+
+    portfolio_results_df['product'] = portfolio_results_df['ticker'].map(ticker_to_name).fillna('')
+
+    # Store files
     portfolio_results_df.to_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'), index=False)
     stock_prices_df = pd.DataFrame([
         {"ticker": ticker, "date": date, "price": price if price is not None else 0}

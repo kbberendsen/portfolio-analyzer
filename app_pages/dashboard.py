@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import subprocess
 import os
+import json
 from dotenv import load_dotenv
 
 # Set the page title for the browser tab
@@ -47,6 +48,26 @@ if not csv_files:
         st.success("File uploaded successfully! Please reload the page.")
     
     st.stop()  # Stop execution if no data is available
+
+# ISIN mapping
+mapping_path = os.path.join('output', 'isin_mapping.json')
+
+if os.path.exists(mapping_path):
+    with open(mapping_path, 'r') as f:
+        isin_mapping = json.load(f)
+    
+    # Check if all tickers are empty strings
+    all_empty = all(
+    (data.get("ticker", "") == "" or data.get("ticker", "") == "FULL")
+    for data in isin_mapping.values()
+)
+    
+    if all_empty:
+        st.warning("Ticker mapping is empty. Please update the mappings on the 'ticker mapping' page before proceeding.")
+        st.stop()
+else:
+    st.warning("ISIN mapping file not found.")
+    st.stop()
 
 # Placeholder for the loading spinner while refreshing data on startup
 loading_placeholder = st.empty()

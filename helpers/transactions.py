@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from helpers.ticker_mapping import ticker_to_name, isin_to_ticker
+import json
 
 # Path to the user-uploaded transaction file and fallback file
 user_file_path = os.path.join('uploads', 'Transactions.csv')
@@ -13,33 +13,23 @@ def process_transactions(file_path):
         df = pd.read_csv(file_path)
 
         # Rename based on column index
-        df.columns.values[[0, 1, 3, 4, 6, 7, 11, 14]] = [
-            'Date', 'Time', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs'
+        df.columns.values[[0, 1, 2, 3, 4, 6, 7, 11, 14]] = [
+            'Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs'
         ]
 
         # Select and assign the renamed columns
-        df_adj = df[['Date', 'Time', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs']]
+        df_adj = df[['Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs']]
+        
+        # Load mapping from JSON
+        with open('output/isin_mapping.json', 'r') as f:
+            isin_mapping = json.load(f)
 
-        # Select and rename the columns
-        # df_adj = df[['Datum', 'Tijd', 'ISIN', 'Beurs', 'Aantal', 'Koers', 'Waarde', 'Transactiekosten en/of']].rename(columns={
-        #     'Datum': 'Date',
-        #     'Tijd': 'Time',
-        #     'ISIN': 'ISIN',
-        #     'Beurs': 'Exchange',
-        #     'Aantal': 'Quantity',
-        #     'Koers': 'Price',
-        #     'Waarde': 'Cost',
-        #     'Transactiekosten en/of': 'Transaction_costs'
-        # })
-        
-        # Map the ISIN values to the new Ticker column
-        df_adj['Stock'] = df_adj['ISIN'].map(isin_to_ticker).astype(str)
-        
-        # Filter out rows where ISIN cannot be mapped
-        df_adj = df_adj[df_adj['Stock'] != 'nan']
-        
-        # Map ISIN values with fallback to original key if not found in the dictionary
-        df_adj['Product'] = df_adj['Stock'].apply(lambda x: ticker_to_name.get(x, x)).astype(str)
+        # Map ISIN to ticker (Stock) and Display Name (Product)
+        df_adj['Stock'] = df_adj['ISIN'].apply(lambda isin: isin_mapping.get(isin, {}).get("ticker", "")).astype(str)
+        df_adj['Product'] = df_adj['ISIN'].apply(lambda isin: isin_mapping.get(isin, {}).get("display_name", "")).astype(str)
+
+        # Filter out rows where ticker is missing
+        df_adj = df_adj[df_adj['Stock'] != '']
 
         # Add the Action column based on the Quantity
         df_adj['Action'] = df_adj['Quantity'].apply(lambda x: 'BUY' if x > 0 else 'SELL')
@@ -79,3 +69,41 @@ else:
 
 # Sort transactions chronologically
 transactions = transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
+
+# Generate ISIN mapping json
+output_path = os.path.join('output', 'isin_mapping.json')
+
+# Ensure required columns are present
+required_columns = {'ISIN', 'Product Name DeGiro'}
+if not required_columns.issubset(transactions.columns):
+    raise ValueError("Required columns 'ISIN' and 'Product Name DeGiro' not found in DataFrame.")
+
+# Load existing mapping if it exists
+if os.path.exists(output_path):
+    with open(output_path, 'r') as f:
+        existing_mapping = json.load(f)
+else:
+    existing_mapping = {}
+
+# Add any new ISINs without overwriting existing ones
+for isin, name, exchange in transactions[['ISIN', 'Product Name DeGiro', 'Exchange']].drop_duplicates().values:
+    if isin not in existing_mapping:
+        print(f"Adding new ISIN mapping: {isin} -> {name}")
+        existing_mapping[isin] = {
+            "ticker": "",
+            "degiro_name": name,
+            "display_name": name,
+            "exchange": exchange,
+        }
+
+# Add special "FULL_PORTFOLIO" entry
+existing_mapping["FULL_PORTFOLIO"] = {
+    "ticker": "FULL",
+    "degiro_name": "Full portfolio",
+    "display_name": "Full portfolio",
+    "exchange": ""
+}
+
+# Save the updated mapping
+with open(output_path, 'w') as f:
+    json.dump(existing_mapping, f, indent=4)
