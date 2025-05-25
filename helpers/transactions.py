@@ -38,9 +38,9 @@ def process_transactions(file_path):
         # Filter out rows where ISIN cannot be mapped
         df_adj = df_adj[df_adj['Stock'] != 'nan']
         
-        # Map the ISIN values to the new Product_name column
-        df_adj['Product'] = df_adj['Stock'].map(ticker_to_name).astype(str)
-        
+        # Map ISIN values with fallback to original key if not found in the dictionary
+        df_adj['Product'] = df_adj['Stock'].apply(lambda x: ticker_to_name.get(x, x)).astype(str)
+
         # Add the Action column based on the Quantity
         df_adj['Action'] = df_adj['Quantity'].apply(lambda x: 'BUY' if x > 0 else 'SELL')
         
