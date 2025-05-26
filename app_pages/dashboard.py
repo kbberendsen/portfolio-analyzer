@@ -26,6 +26,7 @@ except Exception as e:
     st.markdown(
         "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
     )
+    pass
 
 # Transactions file path
 csv_files = [f for f in os.listdir("uploads") if f.endswith(".csv")]
