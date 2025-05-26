@@ -29,6 +29,11 @@ except Exception as e:
     pass
 
 # Transactions file path
+
+# Create uploads directory if it doesn't exist
+os.makedirs("uploads", exist_ok=True)
+
+# Check if the uploads folder contains any CSV files
 csv_files = [f for f in os.listdir("uploads") if f.endswith(".csv")]
 
 # Check for transaction file in the uploads folder
