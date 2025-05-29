@@ -154,14 +154,14 @@ if os.path.exists(portfolio_file):
     # Top badges
     badge_value_color = 'green' if top_current_value_delta > 0 else 'red' if top_current_value_delta < 0 else 'gray'
     badge_value_icon = ':material/arrow_upward:' if top_current_value_delta > 0 else ':material/arrow_downward:' if top_current_value_delta < 0 else ':material/info:'
-    badge_value_text = f"Total Portfolio: € {abs(top_current_value_end):.2f} (∆ +{top_current_value_delta_per}% | {top_current_value_delta_eur}) "if top_current_value_end > 0 \
-                    else f"Total Portfolio: € {abs(top_current_value_end):.2f} (∆ -{top_current_value_delta_per}% | {top_current_value_delta_eur}) " if top_current_value_end < 0 \
+    badge_value_text = f"Total Portfolio: € {abs(top_current_value_end):,.2f} (∆ +{top_current_value_delta_per}% | {top_current_value_delta_eur}) "if top_current_value_end > 0 \
+                    else f"Total Portfolio: € {abs(top_current_value_end):,.2f} (∆ -{top_current_value_delta_per}% | {top_current_value_delta_eur}) " if top_current_value_end < 0 \
                     else "Portfolio Empty"
 
     badge_total_pl_color = 'green' if total_pl > 0 else 'red' if total_pl < 0 else 'gray'
     badge_total_pl_icon = ':material/arrow_upward:' if total_pl > 0 else ':material/arrow_downward:' if total_pl < 0 else ':material/info:'
-    badge_total_pl_text = f"All-time Profit: {total_pl_per:.2f}% (€ {abs(total_pl):.2f})" if total_pl > 0 \
-                    else f"All-time Loss: {total_pl_per:.2f}% (-€ {abs(total_pl):.2f})" if total_pl < 0 \
+    badge_total_pl_text = f"All-time Profit: {total_pl_per:.2f}% (€ {abs(total_pl):,.2f})" if total_pl > 0 \
+                    else f"All-time Loss: {total_pl_per:.2f}% (-€ {abs(total_pl):,.2f})" if total_pl < 0 \
                     else "No Profit/Loss"
     
     st.markdown(f":{badge_value_color}-badge[{badge_value_icon} {badge_value_text}] :{badge_total_pl_color}-badge[{badge_total_pl_icon} {badge_total_pl_text}]")
