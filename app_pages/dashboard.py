@@ -61,8 +61,7 @@ if os.path.exists(mapping_path):
     # Check if all tickers are empty strings
     all_empty = all(
     (data.get("ticker", "") == "" or data.get("ticker", "") == "FULL")
-    for data in isin_mapping.values()
-)
+    for data in isin_mapping.values())
     
     if all_empty:
         st.warning("Ticker mapping is empty. Please update the mappings on the 'ticker mapping' page before proceeding.")
@@ -70,6 +69,9 @@ if os.path.exists(mapping_path):
 else:
     try:
         subprocess.run(['python', 'helpers/transactions.py'], check=True)
+
+        st.warning("Ticker mapping is empty. Please update the mappings on the 'ticker mapping' page before proceeding.")
+        st.stop()
     except:
         st.error("Error running the transactions script to generate ISIN mapping.")
     st.stop()
