@@ -22,10 +22,6 @@ try:
     load_dotenv(env_path)    
 except Exception as e:
     print(f"Error loading environment variables: {e}")
-    st.error("Error loading environment variables. Please check if the .env file is in the app directory.")
-    st.markdown(
-        "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
-    )
     pass
 
 # Transactions file path
