@@ -37,12 +37,13 @@ if os.path.exists(portfolio_file):
     df = df.rename(columns=rename_dict)
 
     df['End Date'] = df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+    df = df.sort_values(by='End Date', ascending=True)
 
     # Remove 'Full Portfolio' entry
     df = df[df["Product"] != "Full portfolio"]
 
     with st.sidebar:
-        # Set the default range to the last 90 days
+        # Set the default date to most recent end date
         default_selected_date = df['End Date'].max()
         
         # Date selection
@@ -97,18 +98,18 @@ if os.path.exists(portfolio_file):
         today_pl_per = top_net_return_delta_per
 
         # Filter the DataFrame for the recent selected date
-        filtered_df = filtered_df[filtered_df['End Date'] == date_1]
+        selected_day_df = df[df['End Date'] == date_1]
 
         # Total profit/loss
-        total_pl = filtered_df['Net Return (€)'].sum()
-        total_pl_per = filtered_df['Net Return (€)'].sum() / filtered_df['Total Cost (€)'].sum() * 100 if filtered_df['Total Cost (€)'].sum() != 0 else 0
+        total_pl = selected_day_df['Net Return (€)'].sum()
+        total_pl_per = selected_day_df['Net Return (€)'].sum() / selected_day_df['Total Cost (€)'].sum() * 100 if selected_day_df['Total Cost (€)'].sum() != 0 else 0
         
         # Filter based on holdings option
         if holdings_option == "Current Holdings":
-            filtered_df = filtered_df[filtered_df["Quantity"] != 0]
+            selected_day_df = selected_day_df[selected_day_df["Quantity"] != 0]
 
         # Prepare display df
-        display_df = filtered_df.copy()
+        display_df = selected_day_df.copy()
 
         # Only select relevant columns
         display_df = display_df[['Product', 'Quantity', 'Current Value (€)', 
