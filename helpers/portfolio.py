@@ -1,17 +1,21 @@
 import os
 from datetime import datetime, timedelta
 import pandas as pd
-from helpers.transactions import transactions
+from helpers.transactions import transactions as transactions_import
 import json
+import warnings
+
+warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
 def calc_portfolio(analyzer, start_date):
-    if transactions.empty:
+    if transactions_import.empty:
         print("No transactions found. Skipping portfolio calculation.")
         return
     
     print('Retrieving portfolio data...')
     
     # Fix data types and definitions
+    transactions = transactions_import[transactions_import["Stock"].notna() & (transactions_import["Stock"] != '')]
     transactions["Date"] = pd.to_datetime(transactions["Date"])
     start_date = datetime.strptime(start_date, '%Y-%m-%d')
     today = datetime.today()

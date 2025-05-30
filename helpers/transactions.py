@@ -1,6 +1,9 @@
 import pandas as pd
 import os
 import json
+import warnings
+
+warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
 # Path to the user-uploaded transaction file and fallback file
 user_file_path = os.path.join('uploads', 'Transactions.csv')
@@ -35,7 +38,7 @@ def process_transactions(file_path):
             df_adj['Product'] = None
 
         # Filter out rows where ticker is missing
-        df_adj = df_adj[df_adj['Stock'] != '']
+        #df_adj = df_adj[df_adj['Stock'] != '']
 
         # Add the Action column based on the Quantity
         df_adj['Action'] = df_adj['Quantity'].apply(lambda x: 'BUY' if x > 0 else 'SELL')

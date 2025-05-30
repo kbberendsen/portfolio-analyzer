@@ -4,10 +4,17 @@ import os
 import json
 import requests
 import time
+import subprocess
 
 # Set the page title
 st.set_page_config(page_title="Ticker Mapping", page_icon="📊", layout="wide")
 st.title("Ticker Mapping")
+
+try:
+    subprocess.run(['python', 'helpers/transactions.py'], check=True)
+except:
+    st.error("Error running the transactions script to generate ISIN mapping.")
+    st.stop()
 
 # Paths
 mapping_path = os.path.join('output', 'isin_mapping.json')
@@ -27,9 +34,12 @@ if 'df' not in st.session_state:
         st.error("Mapping not found. Make sure to run the 'dashboard' page first to generate the mapping file.")
         st.stop()
 
+# Filter out FULL
+st.session_state.df = st.session_state.df[st.session_state.df["Ticker"] != "FULL"]
+
 # Display editable DataFrame
 edited_df = st.data_editor(
-    st.session_state.df,
+    st.session_state.df.sort_values(by=["Product Name (DeGiro)"], ascending=True),
     disabled=["ISIN", "Exchange", "Product Name (DeGiro)"],
     hide_index=True,
     num_rows="fixed",  # Optional: prevents adding new rows manually
@@ -105,7 +115,7 @@ def search_ticker(query, preferred_exchanges=None):
 
     return "", ""
     
-if st.button("Auto-fill tickers using display name"):
+if st.button("Auto-fill empty tickers using display name"):
     st.session_state.df = edited_df
     new_df = st.session_state.df.copy()
     for i, row in new_df.iterrows():

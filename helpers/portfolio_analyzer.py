@@ -2,6 +2,9 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, date
 import json
+import warnings
+
+warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
 class PortfolioAnalyzer:
     def __init__(self, transactions):
