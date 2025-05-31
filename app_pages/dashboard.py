@@ -324,7 +324,7 @@ if tab_selection == "Monthly":
         st.write("No data available for the selected product and date range.")
 
     st.subheader("Monthly Data")
-    st.write(filtered_df)
+    st.write(filtered_df.drop(columns=['Start Date']))
 
 # Handle daily data
 elif tab_selection == "Daily":
@@ -501,7 +501,7 @@ elif tab_selection == "Daily":
         st.write("No data available for the selected product and date range.")
 
     st.subheader("Daily Data")
-    st.write(daily_filtered_df)
+    st.write(daily_filtered_df.drop(columns=['Start Date']))
 
 # File upload
 with st.sidebar:

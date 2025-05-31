@@ -1,6 +1,7 @@
 import time
 import os
 import subprocess
+from datetime import datetime, date
 from helpers.transactions import transactions
 from helpers.portfolio_analyzer import PortfolioAnalyzer
 from helpers.portfolio import calc_portfolio
@@ -22,7 +23,10 @@ else:
     print("Parquet files found in the output folder. Skipping db_refresh.py...")
 
 # Main execution function
-calc_portfolio(analyzer, "2020-11-26")
+first_date = transactions['Date'].min()
+first_date_adj = first_date.strftime('%Y-%m-%d')
+
+calc_portfolio(analyzer, first_date_adj)
 
 # End timing
 end_time = time.time()
