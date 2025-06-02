@@ -154,8 +154,8 @@ if os.path.exists(portfolio_file):
     # Top badges
     badge_value_color = 'green' if top_current_value_delta > 0 else 'red' if top_current_value_delta < 0 else 'gray'
     badge_value_icon = ':material/arrow_upward:' if top_current_value_delta > 0 else ':material/arrow_downward:' if top_current_value_delta < 0 else ':material/info:'
-    badge_value_text = f"Total Portfolio: € {abs(top_current_value_end):,.2f} (∆ +{top_current_value_delta_per}% | {top_current_value_delta_eur}) "if top_current_value_end > 0 \
-                    else f"Total Portfolio: € {abs(top_current_value_end):,.2f} (∆ -{top_current_value_delta_per}% | {top_current_value_delta_eur}) " if top_current_value_end < 0 \
+    badge_value_text = f"Portfolio: € {abs(top_current_value_end):,.2f} (∆ +{top_current_value_delta_per}% | {top_current_value_delta_eur}) "if top_current_value_delta > 0 \
+                    else f"Portfolio: € {abs(top_current_value_end):,.2f} (∆ {top_current_value_delta_per}% | {top_current_value_delta_eur}) " if top_current_value_delta < 0 \
                     else "Portfolio Empty"
 
     badge_total_pl_color = 'green' if total_pl > 0 else 'red' if total_pl < 0 else 'gray'
