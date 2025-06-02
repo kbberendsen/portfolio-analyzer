@@ -44,6 +44,32 @@ class PortfolioAnalyzer:
         # Return the first or last open market day
         return min(filtered_dates) if first else max(filtered_dates)
 
+    def get_fx_rate(self, first_currency, second_currency, start, end):
+        """Fetch FX rate data as { 'YYYY-MM-DD': rate }."""
+
+        ticker = f"{first_currency}{second_currency}=X"
+        print(f"Fetching fx rates: {ticker}")
+
+        data = yf.download(ticker, start=start, end=end, interval='1d')
+
+        if data.empty:
+            print("Downloaded fx rates data is empty.")
+            return {}
+
+        # If data has MultiIndex columns (which happens when only one ticker is used)
+        if isinstance(data.columns, pd.MultiIndex):
+            close_series = data["Close"][ticker]  # Extract the actual Series
+        else:
+            close_series = data["Close"]  # Just in case it's flat
+
+        # Build date string: rate dictionary
+        fx_rates = {
+            date.strftime('%Y-%m-%d'): price
+            for date, price in close_series.items()
+        }
+
+        return fx_rates
+
     def calculate_mwr(self, stock, start_date, end_date=date.today().strftime('%Y-%m-%d'), stock_price_data=None):
         """Calculate Money Weighted Return using individual performance tracking for each transaction."""
         
