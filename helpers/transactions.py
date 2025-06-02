@@ -18,12 +18,12 @@ def process_transactions(file_path):
         df = pd.read_csv(file_path)
 
         # Rename based on column index
-        df.columns.values[[0, 1, 2, 3, 4, 6, 7, 11, 14]] = [
-            'Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs'
+        df.columns.values[[0, 1, 2, 3, 4, 6, 7, 8, 11, 14]] = [
+            'Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Currency', 'Cost', 'Transaction_costs'
         ]
 
         # Select and assign the renamed columns
-        df_adj = df[['Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Cost', 'Transaction_costs']]
+        df_adj = df[['Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Currency', 'Cost', 'Transaction_costs']]
         
         # Check if mapping file exists
         if os.path.exists(mapping_path):
@@ -74,7 +74,7 @@ elif os.path.exists(default_file_path):
     transactions = process_transactions(default_file_path)
 else:
     print("No transactions file found. Initializing empty DataFrame.")
-    transactions = pd.DataFrame(columns=["Date", "Time", "ISIN", "Exchange", "Quantity", "Price", "Cost", "Transaction_costs"])
+    transactions = pd.DataFrame(columns=["Date", "Time", "ISIN", "Exchange", "Quantity", "Price", 'Currency', "Cost", "Transaction_costs"])
 
 # Sort transactions chronologically
 transactions = transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
