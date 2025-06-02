@@ -67,6 +67,8 @@ After uploading your transaction csv file to the dashboard for the first time, y
 ├── cronjobs
 │   └── logs
 ├── docker-compose.yaml
+└── output
+    └── cached data files
 └── uploads
     └── Transactions.csv
 ```
@@ -94,6 +96,8 @@ After uploading your transaction data, the app requires **stock tickers** (e.g.,
 
 > ⚠️ If ticker fields remain empty, the app will not show the product. You must complete ticker mapping before proceeding.
 
+## Currency Conversion
+The app supports **currency conversion** for products priced in different currencies. It uses [Yahoo Finance](https://finance.yahoo.com) to fetch exchange rates. The app will automatically convert all prices to Euro.
 
 # Optional: Supabase database
 The app can utilize a [Supabase database](https://supabase.com/) to store and retrieve your portfolio performance data in the cloud. The Supabase free tier will suffice. Create a new project and create three tables (this can be done in the 'SQL Editor' in the Supabase online dashboard):
@@ -146,6 +150,8 @@ CREATE TABLE stock_prices (
     ticker TEXT,
     date DATE,
     price NUMERIC,
+    fx_rate NUMERIC,
+    currency_pair, TEXT
     PRIMARY KEY (ticker, date)
 );
 ```

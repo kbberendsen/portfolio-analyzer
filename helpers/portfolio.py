@@ -26,9 +26,40 @@ def calc_portfolio(analyzer, start_date):
 
     # Get recent stock price data for new end_dates
     stock_list = transactions["Stock"].unique().tolist() # All stocks
+
     yf_start_date = start_date if len(end_dates) > 30 else (today - timedelta(days=30))
     yf_stock_price_data = analyzer.get_price_at_date(stock_list, yf_start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
+  
+    # Update stock prices to EUR
+    # Remove duplicates and create ticker-to-currency dict
+    ticker_currency_dict = transactions.drop_duplicates(subset=['Stock', 'Currency'])\
+                                    .set_index('Stock')['Currency'].to_dict()
 
+    # Group tickers by currency (excluding EUR)
+    currency_ticker_map = {}
+    for ticker, currency in ticker_currency_dict.items():
+        if currency != 'EUR':
+            currency_ticker_map.setdefault(currency, []).append(ticker)
+
+    # Fetch FX rates once per currency
+    fx_rates_by_currency = {}
+    for currency in currency_ticker_map:
+        fx_rates_by_currency[currency] = analyzer.get_fx_rate(
+            currency, 'EUR',
+            yf_start_date.strftime('%Y-%m-%d'),
+            (today + timedelta(days=1)).strftime('%Y-%m-%d')
+        )
+
+    # Apply FX rates to stock prices
+    for currency, tickers in currency_ticker_map.items():
+        fx_rate = fx_rates_by_currency.get(currency)
+        if fx_rate is None:
+            continue
+        for ticker in tickers:
+            prices = yf_stock_price_data.get(ticker, {})
+            for date, price in prices.items():
+                prices[date] = price * fx_rate.get(date, 1)
+    
     # Load existing results from Parquet file
     try:
         portfolio_results_df = pd.read_parquet('output/portfolio_performance_daily.parquet')
@@ -143,13 +174,31 @@ def calc_portfolio(analyzer, start_date):
 
     portfolio_results_df['product'] = portfolio_results_df['ticker'].map(ticker_to_name).fillna('')
 
-    # Store files
+    # Store parquet files
+    # Daily table
     portfolio_results_df.to_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'), index=False)
-    stock_prices_df = pd.DataFrame([
-        {"ticker": ticker, "date": date, "price": price if price is not None else 0}
-        for ticker, date_prices in stock_prices_dict.items()
-        for date, price in date_prices.items()
-    ])
+
+    # Stock prices
+    stock_prices_records = []
+    for ticker, date_prices in stock_prices_dict.items():
+        currency = ticker_currency_dict.get(ticker, 'EUR')  # Default EUR if missing
+        fx_rate_data = fx_rates_by_currency.get(currency, {}) if currency != 'EUR' else {}
+
+        currency_pair = f"{currency}-EUR" if currency != 'EUR' else "EUR-EUR"
+
+        for date, price in date_prices.items():
+            # FX rate for the date if not EUR, else 1
+            fx_rate = fx_rate_data.get(date, 1) if currency != 'EUR' else 1
+
+            stock_prices_records.append({
+                "ticker": ticker,
+                "date": date,
+                "price": price if price is not None else 0,
+                "fx_rate": fx_rate,
+                "currency_pair": currency_pair
+            })
+
+    stock_prices_df = pd.DataFrame(stock_prices_records)
     stock_prices_df = stock_prices_df.dropna(subset=['price'])
     stock_prices_df.to_parquet(os.path.join('output', 'stock_prices.parquet'), index=False)
 
