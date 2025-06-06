@@ -184,9 +184,8 @@ try:
     daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
 except Exception as e:
     print(f"Error loading data: {e}")
-    subprocess.run(["python", "db_refresh.py"])
-    if st.button('Clear Cached Data', type="primary"):
-        clear_cache()
+    if st.button('Force refresh', type="primary"):
+        subprocess.run(['python', 'main.py'], check=True)
         st.session_state.startup_refresh = False
         st.rerun()
 
