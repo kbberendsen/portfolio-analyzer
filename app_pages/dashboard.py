@@ -178,16 +178,23 @@ rename_dict = {
     'net_performance_percentage': 'Net Performance (%)'
 }
 
-# Load monthly and daily data
-df = pd.read_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'))
-daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
+try:
+    # Load monthly and daily data
+    df = pd.read_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'))
+    daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
 
-# If df or daily_df is empty
-if df.empty or daily_df.empty:
+    # If df or daily_df is empty
+    if df.empty or daily_df.empty:
+        if st.button('Force refresh', type="primary"):
+            subprocess.run(['python', 'main.py'], check=True)
+            st.session_state.startup_refresh = False
+            st.rerun()
+
+except:
     if st.button('Force refresh', type="primary"):
-        subprocess.run(['python', 'main.py'], check=True)
-        st.session_state.startup_refresh = False
-        st.rerun()
+            subprocess.run(['python', 'main.py'], check=True)
+            st.session_state.startup_refresh = False
+            st.rerun()
 
 # Rename columns
 df = df.rename(columns=rename_dict)
