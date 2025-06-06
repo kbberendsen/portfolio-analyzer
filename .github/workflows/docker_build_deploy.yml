@@ -48,6 +48,9 @@ jobs:
         ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           echo "Starting deployment process..."
 
+          # Log in to GHCR using existing token with read:packages scope
+          echo "${{ secrets.GENERAL_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
           # Navigate to the correct directory
           echo "Navigating to directory..."
           cd ~/projects/portfolio-analyzer  # Change to the directory where the Docker Compose file is located
