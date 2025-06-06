@@ -179,8 +179,17 @@ rename_dict = {
 }
 
 # Load monthly and daily data
-df = pd.read_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'))
-daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
+try:
+    df = pd.read_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'))
+    daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
+except Exception as e:
+    print(f"Error loading data: {e}")
+    subprocess.run(["python", "db_refresh.py"])
+    if st.button('Clear Cached Data', type="primary"):
+        clear_cache()
+        st.session_state.startup_refresh = False
+        st.rerun()
+
 
 # Rename columns
 df = df.rename(columns=rename_dict)
