@@ -12,8 +12,9 @@ st.title("Ticker Mapping")
 
 try:
     subprocess.run(['python', 'helpers/transactions.py'], check=True)
-except:
+except Exception as e:
     st.error("Error running the transactions script to generate ISIN mapping.")
+    print(e)
     st.stop()
 
 # Paths

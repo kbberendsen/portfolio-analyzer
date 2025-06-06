@@ -24,7 +24,7 @@ def process_transactions(file_path):
 
         # Select and assign the renamed columns
         df_adj = df[['Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Currency', 'Cost', 'Transaction_costs']]
-        
+
         # Check if mapping file exists
         if os.path.exists(mapping_path):
             with open(mapping_path, 'r') as f:
@@ -53,7 +53,8 @@ def process_transactions(file_path):
         df_adj['Transaction_costs'] = df_adj['Transaction_costs'].fillna(0)
 
         # Set Quantity to int type
-        df_adj["Quantity"] = df_adj["Quantity"].astype(int)
+        df_adj['Quantity'] = df_adj['Quantity'].fillna(0)
+        df_adj['Quantity'] = df_adj['Quantity'].astype(int)
         
         return df_adj
     except Exception as e:
@@ -65,19 +66,17 @@ def process_transactions(file_path):
 if os.path.exists(user_file_path):
     # Process the uploaded file
     transactions = process_transactions(user_file_path)
-    if transactions is None:
-        # Fall back to the default file in case of error
-        transactions = process_transactions(default_file_path)
-elif os.path.exists(default_file_path):
-    print(f'Processing fallback: {default_file_path}')
-    # If the file is not uploaded, use the default file
-    transactions = process_transactions(default_file_path)
 else:
     print("No transactions file found. Initializing empty DataFrame.")
-    transactions = pd.DataFrame(columns=["Date", "Time", "ISIN", "Exchange", "Quantity", "Price", 'Currency', "Cost", "Transaction_costs"])
+    transactions = pd.DataFrame(columns=['Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Currency', 'Cost', 'Transaction_costs'])
 
 # Sort transactions chronologically
-transactions = transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
+try:
+    transactions = transactions.sort_values(by=["Date", "Time"]).reset_index(drop=True)
+except Exception as e:
+    print(f"Error sorting transactions: {e}")
+    transactions = pd.DataFrame(columns=['Date', 'Time', 'Product Name DeGiro', 'ISIN', 'Exchange', 'Quantity', 'Price', 'Currency', 'Cost', 'Transaction_costs'])
+    pass
 
 # Generate ISIN mapping json
 
@@ -94,7 +93,9 @@ else:
     existing_mapping = {}
 
 # Add any new ISINs without overwriting existing ones
-for isin, name, exchange in transactions[['ISIN', 'Product Name DeGiro', 'Exchange']].drop_duplicates().values:
+isin_list = transactions[['ISIN', 'Product Name DeGiro', 'Exchange']].drop_duplicates()
+isin_list = isin_list[isin_list['ISIN'].notna() & (isin_list['ISIN'].astype(str).str.strip() != "")]
+for isin, name, exchange in isin_list.values:
     if isin not in existing_mapping:
         print(f"Adding new ISIN mapping: {isin} -> {name}")
         existing_mapping[isin] = {
