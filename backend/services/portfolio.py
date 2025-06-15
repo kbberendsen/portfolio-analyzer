@@ -1,23 +1,36 @@
 import os
 from datetime import datetime, timedelta
 import pandas as pd
-from helpers.transactions import transactions as transactions_import
 import json
 import warnings
+import time
+
+# Import services
+from backend.services.transactions import get_transactions
+from backend.services.portfolio_analyzer import PortfolioAnalyzer
 
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
-def calc_portfolio(analyzer, start_date):
-    if transactions_import.empty:
+def calc_portfolio():
+    # Start timing
+    start_time = time.time()
+
+    # Get the transactions DataFrame from the service
+    transactions_df = get_transactions()
+    
+    # Instantiate the analyzer with the transaction data
+    analyzer = PortfolioAnalyzer(transactions_df)
+
+    if transactions_df.empty:
         print("No transactions found. Skipping portfolio calculation.")
         return
     
     print('Retrieving portfolio data...')
     
     # Fix data types and definitions
-    transactions = transactions_import[transactions_import["Stock"].notna() & (transactions_import["Stock"] != '')]
+    transactions = transactions_df[transactions_df["Stock"].notna() & (transactions_df["Stock"] != '')]
     transactions["Date"] = pd.to_datetime(transactions["Date"])
-    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    start_date = transactions['Date'].min()
     today = datetime.today()
     end_dates = pd.date_range(start=start_date, end=today, freq='D')[1:]  # Exclude the start_date itself
 
@@ -227,3 +240,7 @@ def calc_portfolio(analyzer, start_date):
     # Save the updated DataFrame to a Parquet file
     monthly_results_df.to_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'), index=False)
     print('Monthly output saved locally')
+
+    # End timing
+    end_time = time.time()
+    print(f"Execution time: {round(end_time - start_time, 2)} seconds")

@@ -7,11 +7,11 @@ import subprocess
 import os
 import json
 from dotenv import load_dotenv
+import requests
 
-# Set the page title for the browser tab
+# Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:")
-
-st.title("Stock Portfolio Dashboard")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
 
 # Load .env file for environment variables
 try:
@@ -24,8 +24,48 @@ except Exception as e:
     print(f"Error loading environment variables: {e}")
     pass
 
-# Transactions file path
+# Trigger portfolio calculation (API)
+def trigger_portfolio_calculation():
+    """Calls the backend API to trigger the portfolio calculation."""
+    calculate_url = f"{API_BASE_URL}/portfolio/calculate"
+    try:
+        response = requests.post(calculate_url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+        st.success(f"Data refresh triggered successfully! (Last update: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
+        return True
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error triggering portfolio calculation: {e}")
+        if e.response is not None:
+            st.error(f"API Error Detail: {e.response.json().get('detail', 'No detail provided.')}")
+        return False
 
+# Trigger portfolio calculation (API)
+def trigger_db_refresh():
+    """Calls the backend API to trigger the portfolio calculation."""
+    refresh_url = f"{API_BASE_URL}/db/refresh"
+    try:
+        response = requests.post(refresh_url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+        return True
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error triggering database refresh: {e}")
+        if e.response is not None:
+            st.error(f"API Error Detail: {e.response.json().get('detail', 'No detail provided.')}")
+        return False
+
+st.title("Stock Portfolio Dashboard")
+
+# Check if the folder exists and contains .parquet files
+output_folder = "output"
+parquet_files = [f for f in os.scandir(output_folder) if f.name.endswith(".parquet")]
+
+if not parquet_files:
+    print("No .parquet files found in the output folder. Running db_refresh...")
+    trigger_db_refresh()
+else:
+    print("Parquet files found in the output folder. Skipping db_refresh...")
+
+# Transactions file path
 # Create uploads directory if it doesn't exist
 os.makedirs("uploads", exist_ok=True)
 
@@ -50,31 +90,6 @@ if not csv_files:
         st.success("File uploaded successfully! Please reload the page.")
     
     st.stop()  # Stop execution if no data is available
-
-# ISIN mapping
-mapping_path = os.path.join('output', 'isin_mapping.json')
-
-if os.path.exists(mapping_path):
-    with open(mapping_path, 'r') as f:
-        isin_mapping = json.load(f)
-    
-    # Check if all tickers are empty strings
-    all_empty = all(
-    (data.get("ticker", "") == "" or data.get("ticker", "") == "FULL")
-    for data in isin_mapping.values())
-    
-    if all_empty:
-        st.warning("Ticker mapping is empty. Please update the mappings on the 'ticker mapping' page before proceeding.")
-        st.stop()
-else:
-    try:
-        subprocess.run(['python', 'helpers/transactions.py'], check=True)
-
-        st.warning("Ticker mapping is empty. Please update the mappings on the 'ticker mapping' page before proceeding.")
-        st.stop()
-    except:
-        st.error("Error running the transactions script to generate ISIN mapping.")
-    st.stop()
 
 # Placeholder for the loading spinner while refreshing data on startup
 loading_placeholder = st.empty()
@@ -129,9 +144,9 @@ def refresh_data():
 
         st.rerun()
     
-    # Run the 'main.py' script to update the CSV
+    # Trigger the backend API to refresh data
     try:
-        subprocess.run(['python', 'main.py'], check=True)
+        trigger_portfolio_calculation()
         if st.session_state.startup_refresh:
             st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
     except subprocess.CalledProcessError as e:
@@ -186,13 +201,13 @@ try:
     # If df or daily_df is empty
     if df.empty or daily_df.empty:
         if st.button('Force refresh', type="primary"):
-            subprocess.run(['python', 'main.py'], check=True)
+            trigger_portfolio_calculation()
             st.session_state.startup_refresh = False
             st.rerun()
 
 except:
     if st.button('Force refresh', type="primary"):
-            subprocess.run(['python', 'main.py'], check=True)
+            trigger_portfolio_calculation()
             st.session_state.startup_refresh = False
             st.rerun()
 
@@ -526,15 +541,15 @@ with st.sidebar:
     # Refresh Button to update the CSV
     if st.button('Refresh Data'):
         st.session_state.startup_refresh = False
-        refresh_data()
+        st.rerun()
 
     # Refresh Button to refresh database if env variable is set to true
     if os.getenv("USE_SUPABASE", "true").lower() == "true":
         if st.button('Refresh Database'):
             st.info("Upserting cached data to database and refreshing locally cached data. This will take some time.")
-            # Run the 'db_refresh.py' script to update the CSV
+            # Run db_refresh (API) to update the CSV
             try:
-                subprocess.run(['python', 'db_refresh.py'], check=True)
+                trigger_db_refresh()
                 if st.session_state.startup_refresh:
                     st.success(f"Database refreshed successfully! (Last refresh: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
             except subprocess.CalledProcessError as e:

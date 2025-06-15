@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from helpers.db import DB
+from backend.utils.db import DB
 
 def fetch_and_save_parquet(db, table_name, parquet_path):
     """Fetch data from Supabase and save it to a Parquet file."""
@@ -55,5 +55,3 @@ def db_refresh():
     process_data(db, 'portfolio_performance_daily', daily_portfolio_parquet_path)
     process_data(db, 'portfolio_performance_monthly', monthly_portfolio_parquet_path)
     process_data(db, 'stock_prices', stock_prices_parquet_path)
-
-db_refresh()

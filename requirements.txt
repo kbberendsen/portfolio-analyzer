@@ -5,3 +5,4 @@ streamlit==1.44.0
 yfinance==0.2.59
 supabase==2.13.0
 python-dotenv==1.0.1
+fastapi==0.115.12
