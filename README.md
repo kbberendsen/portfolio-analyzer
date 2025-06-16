@@ -20,17 +20,6 @@ cd portfolio-analyzer
 curl -O https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/main/docker-compose.yaml
 ```
 
-### Create the .env file
-Create a `.env` file in the same directory as the downloaded docker-compose file. If you want to use a Supabase database ([optional](#optional-supabase-database)), make sure to enter your URL and key values in the .env file and set `USE_SUPABASE` to `"true"`. If not, leave the default values.
-
-```
-cat <<EOT > .env
-USE_SUPABASE=false
-SUPABASE_URL=https://your-supabase-url
-SUPABASE_KEY=your-supabase-api-key
-EOT
-```
-
 ### Build and run the Docker container
 
 ```
@@ -155,4 +144,15 @@ CREATE TABLE stock_prices (
     PRIMARY KEY (ticker, date)
 );
 ```
-After creating the tables, make sure to go to the Supabase project (API) settings to retrieve your __Supabase URL and key__. These values need to be filled in into the .env file created earlier.
+After creating the tables, make sure to go to the Supabase project (API) settings to retrieve your __Supabase URL and key__. These values need to be filled in into the .env file (see below).
+
+## Create the .env file for Supabase
+Create a `.env` file in the same directory as the downloaded docker-compose file. If you want to use a Supabase database ([optional](#optional-supabase-database)), make sure to enter your URL and key values in the .env file and set `USE_SUPABASE` to `"true"`. If not, leave the default values. It's also an option to change the applicable fields in the docker-compose file instead.
+
+```
+cat <<EOT > .env
+USE_SUPABASE=false
+SUPABASE_URL=https://your-supabase-url
+SUPABASE_KEY=your-supabase-api-key
+EOT
+```
