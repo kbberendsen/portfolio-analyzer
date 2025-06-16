@@ -11,7 +11,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Include routersfrom backend.routes import debug
 app.include_router(portfolio.router, prefix="/portfolio", tags=["Portfolio"])
 app.include_router(transactions.router, prefix="/transactions", tags=["Transactions"])
 app.include_router(db_refresh.router, prefix="/db", tags=["Database"])

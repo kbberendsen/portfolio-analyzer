@@ -10,6 +10,6 @@ def trigger_now():
     return {"message": "Triggered portfolio job manually"}
 
 @router.get("/trigger/db_refresh")
-def trigger_now():
+def trigger_db_refresh():
     scheduled_db_refresh_job()
     return {"message": "Triggered db_refresh manually"}

@@ -18,7 +18,7 @@ def update_isin_mapping_json(df: pd.DataFrame):
     # Ensure required columns for mapping exist
     required_cols = {'ISIN', 'Product Name DeGiro', 'Exchange'}
     if not required_cols.issubset(df.columns):
-        print("Warning: Columns required for ISIN mapping are missing. Skipping update.")
+        app_logger.warning("Columns required for ISIN mapping are missing. Skipping update.")
         return
 
     # Load existing mapping or initialize an empty one
@@ -34,7 +34,7 @@ def update_isin_mapping_json(df: pd.DataFrame):
     # Add new ISINs to the mapping without overwriting existing entries
     for isin, name, exchange in isin_list.values:
         if isin not in existing_mapping:
-            print(f"Adding new ISIN mapping: {isin} -> {name}")
+            app_logger.info(f"Adding new ISIN mapping: {isin} -> {name}")
             existing_mapping[isin] = {
                 "ticker": "",
                 "degiro_name": name,
@@ -61,7 +61,7 @@ def load_and_prepare_data() -> pd.DataFrame:
     This incorporates the logic from the old `process_transactions` function.
     """
     if not os.path.exists(TRANSACTION_FILE):
-        print(f"Warning: Transaction file not found at {TRANSACTION_FILE}")
+        app_logger.warning(f"Transaction file not found at {TRANSACTION_FILE}")
         return pd.DataFrame()
     
     try:
@@ -99,7 +99,7 @@ def load_and_prepare_data() -> pd.DataFrame:
         return df.sort_values(by=["Date", "Time"]).reset_index(drop=True)
 
     except Exception as e:
-        print(f"Error loading or processing transaction data: {e}")
+        app_logger.error(f"Error loading or processing transaction data: {e}")
         return pd.DataFrame()
 
 def get_transactions() -> pd.DataFrame:
