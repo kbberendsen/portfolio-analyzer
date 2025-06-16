@@ -238,7 +238,7 @@ def calc_portfolio():
             .reset_index(level=0, drop=True)
             .reset_index()
         )
-
+        
         # Convert 'end_date' to string in 'YYYY-MM-DD' format
         monthly_results_df['end_date'] = monthly_results_df['end_date'].dt.strftime('%Y-%m-%d')
 
@@ -255,3 +255,4 @@ def calc_portfolio():
     except Exception as e:
         app_logger.error(f"Error during portfolio calculation: {e}")
         traceback.print_exc()
+        raise e

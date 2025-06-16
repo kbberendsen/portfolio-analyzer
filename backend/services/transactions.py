@@ -109,12 +109,13 @@ def get_transactions() -> pd.DataFrame:
     """
     try:
         app_logger.info("Processing transactions...")
+        
         transactions_df = load_and_prepare_data()
         app_logger.info("Transactions processed successfully.")
 
     except Exception as e:
         app_logger.error(f"Error during transactions processing: {e}")
         traceback.print_exc()
-        return pd.DataFrame()
+        raise e
     
     return transactions_df.copy()
