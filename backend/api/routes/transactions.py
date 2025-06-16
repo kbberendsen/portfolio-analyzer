@@ -3,7 +3,7 @@ from typing import List
 from backend.models.transactions import Transaction
 from backend.services.transactions import get_transactions
 from fastapi import APIRouter, HTTPException, status
-import traceback
+from backend.utils.logger import app_logger
 
 router = APIRouter()
 
@@ -24,8 +24,8 @@ def get_all_transactions():
         if transactions.empty:
             return []  # Return an empty list if no transactions are found.
     except Exception as e:
-        traceback.print_exc()
         # If an error occurs while fetching transactions, raise an HTTP exception.
+        app_logger.error("An error occurred while fetching transactions", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred while fetching transactions: {e}"

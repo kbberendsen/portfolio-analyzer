@@ -23,6 +23,7 @@ try:
 
 except requests.exceptions.RequestException as e:
     st.error("Could not connect to the transaction processing API.")
+    st.exception(e)
     st.stop()
 
 # Paths
