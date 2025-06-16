@@ -12,8 +12,8 @@ services:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
     environment:
-      - USE_SUPABASE=${USE_SUPABASE:-"false"}
-      - SUPABASE_URL=${SUPABASE_URL:-"http://placeholder-supabase-url.com"}
-      - SUPABASE_KEY=${SUPABASE_KEY:-"placeholder-supabase-key"}
-      - API_BASE_URL=${API_BASE_URL:-"http://localhost:8000"}
+      - USE_SUPABASE=${USE_SUPABASE:-false}
+      - SUPABASE_URL=${SUPABASE_URL:-http://placeholder-supabase-url.com}
+      - SUPABASE_KEY=${SUPABASE_KEY:-placeholder-supabase-key}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
     restart: unless-stopped
