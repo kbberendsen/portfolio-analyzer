@@ -4,17 +4,25 @@ import os
 import json
 import requests
 import time
-import subprocess
 
 # Set the page title
 st.set_page_config(page_title="Ticker Mapping", page_icon="📊", layout="wide")
 st.title("Ticker Mapping")
 
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
+
+# Call transactions processing (API)
 try:
-    subprocess.run(['python', 'helpers/transactions.py'], check=True)
-except Exception as e:
-    st.error("Error running the transactions script to generate ISIN mapping.")
-    print(e)
+    transactions_url = f"{API_BASE_URL}/transactions/all"
+    response = requests.get(transactions_url)
+    if response.status_code == 200:
+        pass
+    else:
+        st.error(f"Failed to generate ISIN mapping: {response.text}")
+        st.stop()
+
+except requests.exceptions.RequestException as e:
+    st.error("Could not connect to the transaction processing API.")
     st.stop()
 
 # Paths

@@ -1,6 +1,8 @@
 import os
 import pandas as pd
-from helpers.db import DB
+from backend.utils.db import DB
+import traceback
+from backend.utils.logger import app_logger
 
 def fetch_and_save_parquet(db, table_name, parquet_path):
     """Fetch data from Supabase and save it to a Parquet file."""
@@ -37,23 +39,30 @@ def process_data(db, table_name, parquet_path):
         upsert_and_replace_parquet(db, df, table_name, parquet_path)
 
 def db_refresh():
-    # Check if Supabase should be used
-    use_supabase = os.getenv("USE_SUPABASE", "false").lower() == "true"
-    if not use_supabase:
-        print("Supabase is disabled. Skipping database operations.")
+    try:
+        app_logger.info("Starting database refresh process...")
+        # Check if Supabase should be used
+        use_supabase = os.getenv("USE_SUPABASE", "false").lower() == "true"
+        if not use_supabase:
+            print("Supabase is disabled. Skipping database operations.")
+            return
+
+        # Init db
+        db = DB()
+
+        # Define paths for the Parquet files
+        daily_portfolio_parquet_path = 'output/portfolio_performance_daily.parquet'
+        monthly_portfolio_parquet_path = 'output/portfolio_performance_monthly.parquet'
+        stock_prices_parquet_path = 'output/stock_prices.parquet'
+
+        # Process daily, monthly, and stock prices data
+        process_data(db, 'portfolio_performance_daily', daily_portfolio_parquet_path)
+        process_data(db, 'portfolio_performance_monthly', monthly_portfolio_parquet_path)
+        process_data(db, 'stock_prices', stock_prices_parquet_path)
+
+        app_logger.info("Database refresh process completed successfully.")
+
+    except Exception as e:
+        app_logger.error(f"Error during database refresh: {e}")
+        traceback.print_exc()
         return
-
-    # Init db
-    db = DB()
-
-    # Define paths for the Parquet files
-    daily_portfolio_parquet_path = 'output/portfolio_performance_daily.parquet'
-    monthly_portfolio_parquet_path = 'output/portfolio_performance_monthly.parquet'
-    stock_prices_parquet_path = 'output/stock_prices.parquet'
-
-    # Process daily, monthly, and stock prices data
-    process_data(db, 'portfolio_performance_daily', daily_portfolio_parquet_path)
-    process_data(db, 'portfolio_performance_monthly', monthly_portfolio_parquet_path)
-    process_data(db, 'stock_prices', stock_prices_parquet_path)
-
-db_refresh()
