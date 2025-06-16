@@ -3,10 +3,19 @@ import pandas as pd
 import os
 import yfinance as yf
 from datetime import datetime
-import subprocess
+from backend.utils.api import post_api_request
 
-# Set the page title for the browser tab
+# Config
 st.set_page_config(page_title="Stock Split Calculator", page_icon=":bar_chart:")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
+
+# Backend triggers
+def trigger_portfolio_calculation():
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return post_api_request(
+        f"{API_BASE_URL}/portfolio/calculate",
+        success_message=f"Portfolio calculation triggered! (Last update: {ts})"
+    )
 
 st.title('Stock Split Calculator')
 st.subheader('To Invest and Split')
@@ -20,11 +29,10 @@ if 'investment_needed' not in st.session_state:
     st.session_state.investment_needed = 0
 
 def refresh_data():
-    # Run the 'main.py' script to update the CSV
     try:
-        subprocess.run(['python', 'main.py'], check=True)
-        st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-    except subprocess.CalledProcessError as e:
+        # Check if initial db load is needed
+        trigger_portfolio_calculation()
+    except Exception as e:
         st.error(f"Error occurred while refreshing data: {e}")
 
 @st.cache_data

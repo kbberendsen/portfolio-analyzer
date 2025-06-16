@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from backend.services.portfolio import calc_portfolio
-import traceback
+from backend.utils.logger import app_logger
 
 router = APIRouter()
 
@@ -30,7 +30,6 @@ def run_portfolio_calculation():
         )
         
     except Exception as e:
-        traceback.print_exc()
         # If the calculation fails, return a 500 error with the details.
         raise HTTPException(
             status_code=500, 

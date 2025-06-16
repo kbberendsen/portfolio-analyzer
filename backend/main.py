@@ -3,8 +3,6 @@ from backend.api.routes import portfolio, transactions, db_refresh, logs, debug
 from backend.utils.scheduler import start_scheduled_tasks
 from backend.utils.logger import app_logger
 
-app_logger.info("FastAPI app is starting...")
-
 app = FastAPI(
     title="Portfolio Analyzer API",
     description="API to manage and calculate portfolio data.",
@@ -23,3 +21,5 @@ async def read_root():
     return {"message": "Portfolio Analyzer API is running"}
 
 start_scheduled_tasks()
+
+app_logger.info("FastAPI app started.")

@@ -4,7 +4,6 @@ import pandas as pd
 import json
 import warnings
 import time
-import traceback
 from backend.utils.logger import app_logger
 
 # Import services
@@ -22,22 +21,29 @@ def calc_portfolio():
 
         # Get the transactions DataFrame from the service
         transactions_df = get_transactions()
+        app_logger.info(f"Retrieved transactions DataFrame with {len(transactions_df)} rows.")
         
         # Instantiate the analyzer with the transaction data
         analyzer = PortfolioAnalyzer(transactions_df)
 
         if transactions_df.empty:
-            print("No transactions found. Skipping portfolio calculation.")
+            app_logger.warning("No transactions found. Skipping portfolio calculation.")
             return
         
         app_logger.info('Retrieving portfolio data...')
         
         # Fix data types and definitions
         transactions = transactions_df[transactions_df["Stock"].notna() & (transactions_df["Stock"] != '')]
+        if transactions.empty:
+            app_logger.warning("No valid transactions with a stock ticker. Skipping portfolio calculation.")
+            return
+        
         transactions["Date"] = pd.to_datetime(transactions["Date"])
         start_date = transactions['Date'].min()
         today = datetime.today()
         end_dates = pd.date_range(start=start_date, end=today, freq='D')[1:]  # Exclude the start_date itself
+
+        app_logger.info(f"Processing portfolio performance from {start_date.strftime('%Y-%m-%d')} to {today.strftime('%Y-%m-%d')}")
 
         # Initialize an empty list to store portfolio data for each day
         portfolio_results_list = []
@@ -245,7 +251,6 @@ def calc_portfolio():
         # Save the updated DataFrame to a Parquet file
         monthly_results_df.to_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'), index=False)
         app_logger.info('Monthly output saved locally')
-
         # End timing
         end_time = time.time()
         app_logger.info(f"Execution time: {round(end_time - start_time, 2)} seconds")
@@ -253,6 +258,5 @@ def calc_portfolio():
         app_logger.info(f"Portfolio calculation completed successfully ({round(end_time - start_time, 2)}s)")
     
     except Exception as e:
-        app_logger.error(f"Error during portfolio calculation: {e}")
-        traceback.print_exc()
+        app_logger.error(f"Error during portfolio calculation: {e}", exc_info=True)
         raise e

@@ -1,68 +1,34 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import plotly.express as px
-import subprocess
 import os
-from dotenv import load_dotenv
-import requests
+from backend.utils.api import post_api_request
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
 
-# Load .env file for environment variables
-try:
-    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
-    if not os.path.exists(env_path):
-        raise FileNotFoundError(f"File not found: {env_path}")
-    
-    load_dotenv(env_path)    
-except Exception as e:
-    print(f"Error loading environment variables: {e}")
-    pass
-
-# Trigger portfolio calculation (API)
+# Backend triggers
 def trigger_portfolio_calculation():
-    """Calls the backend API to trigger the portfolio calculation."""
-    calculate_url = f"{API_BASE_URL}/portfolio/calculate"
-    try:
-        response = requests.post(calculate_url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
-        st.success(f"Data refresh triggered successfully! (Last update: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-        return True
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error triggering portfolio calculation: {e}")
-        if e.response is not None:
-            st.error(f"API Error Detail: {e.response.json().get('detail', 'No detail provided.')}")
-        return False
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return post_api_request(
+        f"{API_BASE_URL}/portfolio/calculate",
+        success_message=f"Portfolio calculation triggered! (Last update: {ts})"
+    )
 
-# Trigger portfolio calculation (API)
 def trigger_db_refresh():
-    """Calls the backend API to trigger the portfolio calculation."""
-    refresh_url = f"{API_BASE_URL}/db/refresh"
-    try:
-        response = requests.post(refresh_url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
-        return True
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error triggering database refresh: {e}")
-        if e.response is not None:
-            st.error(f"API Error Detail: {e.response.json().get('detail', 'No detail provided.')}")
-        return False
+    return post_api_request(
+        f"{API_BASE_URL}/db/refresh",
+        success_message="Database refresh triggered successfully."
+    )
+
+def initial_db_load():
+    return post_api_request(
+        f"{API_BASE_URL}/db/initial-db-load"
+    )
 
 st.title("Stock Portfolio Dashboard")
-
-# Check if the folder exists and contains .parquet files
-output_folder = "output"
-parquet_files = [f for f in os.scandir(output_folder) if f.name.endswith(".parquet")]
-
-if not parquet_files:
-    print("No .parquet files found in the output folder. Running db_refresh...")
-    trigger_db_refresh()
-else:
-    print("Parquet files found in the output folder. Skipping db_refresh...")
 
 # Transactions file path
 # Create uploads directory if it doesn't exist
@@ -145,10 +111,12 @@ def refresh_data():
     
     # Trigger the backend API to refresh data
     try:
+        # Check if initial db load is needed
+        initial_db_load()
         trigger_portfolio_calculation()
         if st.session_state.startup_refresh:
             st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         st.error(f"Error occurred while refreshing data: {e}")
         
 def clear_cache():
@@ -551,7 +519,7 @@ with st.sidebar:
                 trigger_db_refresh()
                 if st.session_state.startup_refresh:
                     st.success(f"Database refreshed successfully! (Last refresh: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-            except subprocess.CalledProcessError as e:
+            except Exception as e:
                 st.error(f"Error occurred while refreshing database: {e}")
             st.session_state.startup_refresh = False
             st.rerun()
