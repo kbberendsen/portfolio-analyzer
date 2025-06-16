@@ -4,7 +4,6 @@ import os
 import json
 import requests
 import time
-import subprocess
 
 # Set the page title
 st.set_page_config(page_title="Ticker Mapping", page_icon="📊", layout="wide")

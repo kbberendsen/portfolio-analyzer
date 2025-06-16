@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import subprocess
 import os
-import json
 from dotenv import load_dotenv
 import requests
 

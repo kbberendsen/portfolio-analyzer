@@ -2,6 +2,8 @@ import pandas as pd
 import os
 import json
 import warnings
+import traceback
+from backend.utils.logger import app_logger
 
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
@@ -100,12 +102,19 @@ def load_and_prepare_data() -> pd.DataFrame:
         print(f"Error loading or processing transaction data: {e}")
         return pd.DataFrame()
 
-# Load and prepare the transaction data at module level
-transactions_df = load_and_prepare_data()
-
 def get_transactions() -> pd.DataFrame:
     """
     Returns a copy of the cleaned transactions DataFrame.
     Ensures consumers can't modify the original data.
     """
+    try:
+        app_logger.info("Processing transactions...")
+        transactions_df = load_and_prepare_data()
+        app_logger.info("Transactions processed successfully.")
+
+    except Exception as e:
+        app_logger.error(f"Error during transactions processing: {e}")
+        traceback.print_exc()
+        return pd.DataFrame()
+    
     return transactions_df.copy()

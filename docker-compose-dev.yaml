@@ -4,15 +4,19 @@ services:
     image: portfolio-analyzer:latest
     container_name: portfolio-analyzer-container
     ports:
-      - "8501:8501"
+      - "8501:8501"     # Streamlit (public)
+    expose:
+      - "8000"          # FastAPI (internal only)
     volumes:
-      - ./cronjobs/logs:/app/cronjobs/logs
+      - ./output:/app/output
       - ./uploads:/app/uploads
+      - ./logs:/app/logs
       - ./.env:/app/.env
     environment:
       - USE_SUPABASE=${USE_SUPABASE:-false}
       - SUPABASE_URL=${SUPABASE_URL:-"http://placeholder-supabase-url.com"}
       - SUPABASE_KEY=${SUPABASE_KEY:-"placeholder-supabase-key"}
+      - API_BASE_URL=${API_BASE_URL:-"http://localhost:8000"}
     env_file:
       - .env
     restart: unless-stopped
