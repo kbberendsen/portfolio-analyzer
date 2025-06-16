@@ -1,7 +1,6 @@
 services:
   app:
     image: ghcr.io/kbberendsen/portfolio-analyzer:latest
-    container_name: portfolio-analyzer-container
     ports:
       - "8501:8501"     # Streamlit (public)
     expose:
