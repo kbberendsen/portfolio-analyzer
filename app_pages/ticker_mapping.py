@@ -123,6 +123,8 @@ def search_ticker(query, preferred_exchanges=None):
         return "", ""
 
     return "", ""
+
+st.info("Simplify the 'Display Name' column above to improve auto-fill results. E.g. 'Gamestop' instead of 'GAMESTOP CORPORATION C'")
     
 if st.button("Auto-fill empty tickers using display name"):
     st.session_state.df = edited_df

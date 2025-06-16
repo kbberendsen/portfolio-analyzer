@@ -28,6 +28,30 @@ def initial_db_load():
         f"{API_BASE_URL}/db/initial-db-load"
     )
 
+############ APP ############
+
+LOG_DIR = "logs"
+
+def get_log_files():
+    if not os.path.exists(LOG_DIR):
+        return []
+    return [f for f in os.listdir(LOG_DIR) if os.path.isfile(os.path.join(LOG_DIR, f))]
+
+def read_last_n_lines_reversed(filename, n=100):
+    with open(os.path.join(LOG_DIR, filename), 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+    return "".join(lines[-n:][::-1])
+
+with st.sidebar.expander("View Logs", expanded=False):
+    log_files = get_log_files()
+    if not log_files:
+        st.info("No log files found.")
+    else:
+        selected_log = st.selectbox("Select log file", log_files)
+        if selected_log:
+            content = read_last_n_lines_reversed(selected_log, 100)
+            st.text_area(f"Contents of {selected_log} (most recent first)", content, height=300)
+
 st.title("Stock Portfolio Dashboard")
 
 # Transactions file path
@@ -173,10 +197,11 @@ try:
             st.rerun()
 
 except:
-    if st.button('Force refresh', type="primary"):
-            trigger_portfolio_calculation()
-            st.session_state.startup_refresh = False
-            st.rerun()
+    st.warning("Failed loading data. Are the stock tickers mapped correctly? Go to 'ticker mapping' page in the sidebar. Check GitHub project documention for instructions.")
+    st.markdown(
+        "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
+    )
+    st.stop()
 
 # Rename columns
 df = df.rename(columns=rename_dict)
