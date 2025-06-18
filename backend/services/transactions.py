@@ -71,7 +71,7 @@ def load_and_prepare_data() -> pd.DataFrame:
         column_names = {
             0: 'Date', 1: 'Time', 2: 'Product_Name_DeGiro', 3: 'ISIN', 
             4: 'Exchange', 6: 'Quantity', 7: 'Price', 8: 'Currency', 
-            11: 'Cost', 14: 'Transaction_Costs'
+            11: 'Cost', 14: 'Transaction_costs'
         }
         # Select and rename columns safely using explicit integer indices
         column_indices = [int(i) for i in column_names.keys()]
@@ -103,7 +103,7 @@ def load_and_prepare_data() -> pd.DataFrame:
         df['Quantity'] = df['Quantity'].fillna(0).astype(float)
         df['Price'] = df['Price'].fillna(0).astype(float)
         df['Cost'] = df['Cost'].fillna(0).astype(float)
-        df['Transaction_Costs'] = df['Transaction_Costs'].fillna(0).astype(float)
+        df['Transaction_costs'] = df['Transaction_costs'].fillna(0).astype(float)
         
         df = df.dropna()
         # Sort transactions chronologically and return

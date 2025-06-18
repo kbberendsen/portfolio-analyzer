@@ -16,7 +16,7 @@ class Transaction(BaseModel):
     Price: float
     Currency: str
     Cost: float
-    Transaction_Costs: float
+    Transaction_costs: float
     Stock: str
     Product: str
     Action: str
