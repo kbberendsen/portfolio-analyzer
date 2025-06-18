@@ -110,7 +110,7 @@ def check_columns(uploaded_df):
         st.error(f"Error reading the uploaded file: {e}")
         return False
 
-def refresh_data():
+def refresh_data(uploaded_file=None):
     # Check for new transactions file
     if uploaded_file is not None:
         uploaded_df = pd.read_csv(uploaded_file)
@@ -533,7 +533,8 @@ with st.sidebar:
     # Refresh Button to update the CSV
     if st.button('Refresh Data'):
         st.session_state.startup_refresh = False
-        st.rerun()
+        refresh_data(uploaded_file)
+        #st.rerun()
 
     # Refresh Button to refresh database if env variable is set to true
     if os.getenv("USE_SUPABASE", "true").lower() == "true":
