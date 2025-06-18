@@ -97,7 +97,7 @@ def load_and_prepare_data() -> pd.DataFrame:
 
         # Data cleaning
         df['Action'] = df['Quantity'].apply(lambda x: 'BUY' if x > 0 else 'SELL')
-        df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y').dt.date
+        df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y')
         df['Time'] = pd.to_datetime(df['Time'], format='%H:%M').dt.time
    
         df['Quantity'] = df['Quantity'].fillna(0).astype(float)
