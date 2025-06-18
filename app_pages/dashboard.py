@@ -13,8 +13,7 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environm
 def trigger_portfolio_calculation():
     ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return post_api_request(
-        f"{API_BASE_URL}/portfolio/calculate",
-        success_message=f"Portfolio calculation triggered! (Last update: {ts})"
+        f"{API_BASE_URL}/portfolio/calculate"
     )
 
 def trigger_db_refresh():
@@ -123,8 +122,6 @@ def refresh_data(uploaded_file=None):
         trigger_portfolio_calculation()
         if st.session_state.startup_refresh:
             st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-
-        st.rerun()
         
     except Exception as e:
         st.error(f"Error occurred while refreshing data: {e}")
