@@ -15,19 +15,12 @@ router = APIRouter()
 def run_portfolio_calculation():
     """
     This endpoint kicks off the data processing job.
-    A successful request will result in a 200 code response.
     """
     try:
         # Call the function to perform the calculation.
         calc_portfolio()
         
-        # Explicitly return a 200 response to confirm
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={
-                "message": "Portfolio calculation completed successfully."
-            }
-        )
+        return {"message": "Portfolio calculation triggered successfully"}
         
     except Exception as e:
         # If the calculation fails, return a 500 error with the details.
