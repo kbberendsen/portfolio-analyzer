@@ -83,8 +83,6 @@ if not csv_files:
 # Placeholder for the loading spinner while refreshing data on startup
 loading_placeholder = st.empty()
 
-#uploaded_file = None
-
 # Define startup refresh state variable
 if "startup_refresh" not in st.session_state:
     st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet

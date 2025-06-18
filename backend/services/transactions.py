@@ -78,7 +78,11 @@ def load_and_prepare_data() -> pd.DataFrame:
         df.columns = list(column_names.values())
         
         # First, update the ISIN mapping file based on the raw transactions
-        isin_mapping = update_isin_mapping_json(df)
+        try:
+            isin_mapping = update_isin_mapping_json(df)
+        except Exception as e:
+            app_logger.error(f"Error updating ISIN mapping: {e}", exc_info=True)
+            isin_mapping = {}
 
         # Apply the mapping to the DataFrame
         if isin_mapping:
@@ -99,7 +103,7 @@ def load_and_prepare_data() -> pd.DataFrame:
         return df.sort_values(by=["Date", "Time"]).reset_index(drop=True)
 
     except Exception as e:
-        app_logger.error(f"Error loading or processing transaction data: {e}")
+        app_logger.error(f"Error loading or processing transaction data: {e}", exc_info=True)
         return pd.DataFrame()
 
 def get_transactions() -> pd.DataFrame:
@@ -114,8 +118,7 @@ def get_transactions() -> pd.DataFrame:
         app_logger.info("Transactions processed successfully.")
 
     except Exception as e:
-        app_logger.error(f"Error during transactions processing: {e}")
-        traceback.print_exc()
+        app_logger.error(f"Error during transactions processing: {e}", exc_info=True)
         raise e
     
     return transactions_df.copy()
