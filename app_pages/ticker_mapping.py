@@ -15,13 +15,8 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environm
 try:
     transactions_url = f"{API_BASE_URL}/transactions/all"
     response = requests.get(transactions_url)
-    if response.status_code == 200:
-        pass
-    else:
-        st.error(f"Failed to generate ISIN mapping: {response.text}")
-        st.stop()
 
-except requests.exceptions.RequestException as e:
+except Exception as e:
     st.error("Could not connect to the transaction processing API.")
     st.exception(e)
     st.stop()
