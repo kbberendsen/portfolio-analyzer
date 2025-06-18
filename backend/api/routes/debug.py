@@ -1,6 +1,10 @@
 # backend/routes/debug.py
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from backend.utils.scheduler import scheduled_portfolio_job,  scheduled_db_refresh_job
+from backend.services.transactions import get_transactions
+from backend.utils.logger import app_logger
+import datetime
 
 router = APIRouter()
 

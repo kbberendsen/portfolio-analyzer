@@ -87,21 +87,12 @@ loading_placeholder = st.empty()
 if "startup_refresh" not in st.session_state:
     st.session_state.startup_refresh = False  # Indicates refresh hasn't run yet
 
-def check_columns(uploaded_df):
-    # Define the expected columns for the transaction data
-    required_columns = ['Datum', 'ISIN', 'Beurs', 'Aantal', 'Koers', 'Waarde', 'Transactiekosten en/of']
-    
+def check_columns(uploaded_df):    
     try:
         st.write(uploaded_df.head())  # Display the first few rows of the uploaded file
 
         if uploaded_df.empty:
             st.error("Uploaded file is empty.")
-            return False
-        
-        if all(col in uploaded_df.columns for col in required_columns):
-            return True
-        else:
-            st.error("The uploaded file does not contain the required columns.")
             return False
         
     except Exception as e:
@@ -112,10 +103,6 @@ def refresh_data(uploaded_file=None):
     # Check for new transactions file
     if uploaded_file is not None:
         uploaded_df = pd.read_csv(uploaded_file)
-
-        if not check_columns(uploaded_df):
-            st.error("The uploaded CSV file does not have the required columns. Please upload a valid file.")
-            return
 
         # Read the uploaded file into a DataFrame
         new_data = uploaded_df
@@ -128,8 +115,6 @@ def refresh_data(uploaded_file=None):
         file_path = os.path.join('uploads', 'Transactions.csv')
         new_data.to_csv(file_path, index=False)
         st.success(f"Data saved to {file_path}")
-
-        st.rerun()
     
     # Trigger the backend API to refresh data
     try:
@@ -138,6 +123,9 @@ def refresh_data(uploaded_file=None):
         trigger_portfolio_calculation()
         if st.session_state.startup_refresh:
             st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
+
+        st.rerun()
+        
     except Exception as e:
         st.error(f"Error occurred while refreshing data: {e}")
         
@@ -532,7 +520,7 @@ with st.sidebar:
     if st.button('Refresh Data'):
         st.session_state.startup_refresh = False
         refresh_data(uploaded_file)
-        #st.rerun()
+        st.rerun()
 
     # Refresh Button to refresh database if env variable is set to true
     if os.getenv("USE_SUPABASE", "true").lower() == "true":

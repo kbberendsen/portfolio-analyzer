@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from typing import List
 from backend.models.transactions import Transaction
 from backend.services.transactions import get_transactions
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException
 from backend.utils.logger import app_logger
 
 router = APIRouter()
@@ -30,4 +30,9 @@ def get_all_transactions():
             status_code=500,
             detail=f"An error occurred while fetching transactions: {e}"
         )
-    return transactions.to_dict(orient="records")
+    
+    # Convert some columns to string for JSON serialization
+    df = transactions.copy()
+    df['Date'] = df['Date'].astype(str)
+    df['Time'] = df['Time'].astype(str)
+    return df.to_dict(orient="records")

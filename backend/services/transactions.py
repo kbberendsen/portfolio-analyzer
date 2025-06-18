@@ -16,7 +16,7 @@ def update_isin_mapping_json(df: pd.DataFrame):
     Reads the transactions df, finds new ISINs, and updates the mapping JSON file.
     """
     # Ensure required columns for mapping exist
-    required_cols = {'ISIN', 'Product Name DeGiro', 'Exchange'}
+    required_cols = {'ISIN', 'Product_Name_DeGiro', 'Exchange'}
     if not required_cols.issubset(df.columns):
         app_logger.warning("Columns required for ISIN mapping are missing. Skipping update.")
         return
@@ -28,7 +28,7 @@ def update_isin_mapping_json(df: pd.DataFrame):
             existing_mapping = json.load(f)
     
     # Find unique ISINs from the transaction data
-    isin_list = df[['ISIN', 'Product Name DeGiro', 'Exchange']].drop_duplicates()
+    isin_list = df[['ISIN', 'Product_Name_DeGiro', 'Exchange']].drop_duplicates()
     isin_list = isin_list[isin_list['ISIN'].notna() & (isin_list['ISIN'].astype(str).str.strip() != "")]
 
     # Add new ISINs to the mapping without overwriting existing entries
@@ -69,17 +69,20 @@ def load_and_prepare_data() -> pd.DataFrame:
 
         # Define the column names based on the old script's index-based renaming
         column_names = {
-            0: 'Date', 1: 'Time', 2: 'Product Name DeGiro', 3: 'ISIN', 
+            0: 'Date', 1: 'Time', 2: 'Product_Name_DeGiro', 3: 'ISIN', 
             4: 'Exchange', 6: 'Quantity', 7: 'Price', 8: 'Currency', 
-            11: 'Cost', 14: 'Transaction_costs'
+            11: 'Cost', 14: 'Transaction_Costs'
         }
-        # Select and rename columns safely
-        df = df.iloc[:, list(column_names.keys())]
+        # Select and rename columns safely using explicit integer indices
+        column_indices = [int(i) for i in column_names.keys()]
+        df = df.iloc[:, column_indices]
         df.columns = list(column_names.values())
         
         # First, update the ISIN mapping file based on the raw transactions
         try:
+            app_logger.info("Updating ISIN mapping from transaction data...")
             isin_mapping = update_isin_mapping_json(df)
+            app_logger.info("ISIN mapping updated successfully.")
         except Exception as e:
             app_logger.error(f"Error updating ISIN mapping: {e}", exc_info=True)
             isin_mapping = {}
@@ -94,11 +97,15 @@ def load_and_prepare_data() -> pd.DataFrame:
 
         # Data cleaning
         df['Action'] = df['Quantity'].apply(lambda x: 'BUY' if x > 0 else 'SELL')
-        df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y')
+        df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y').dt.date
         df['Time'] = pd.to_datetime(df['Time'], format='%H:%M').dt.time
-        df['Transaction_costs'] = df['Transaction_costs'].fillna(0)
-        df['Quantity'] = df['Quantity'].fillna(0).astype(int)
-
+   
+        df['Quantity'] = df['Quantity'].fillna(0).astype(float)
+        df['Price'] = df['Price'].fillna(0).astype(float)
+        df['Cost'] = df['Cost'].fillna(0).astype(float)
+        df['Transaction_Costs'] = df['Transaction_Costs'].fillna(0).astype(float)
+        
+        df = df.dropna()
         # Sort transactions chronologically and return
         return df.sort_values(by=["Date", "Time"]).reset_index(drop=True)
 
