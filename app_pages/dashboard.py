@@ -8,7 +8,7 @@ import time
 from backend.utils.api import post_api_request
 
 # Config
-st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:")
+st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
 
 def is_backend_alive():
@@ -165,9 +165,6 @@ def clear_cache():
 if not st.session_state.startup_refresh:
 
     if cached_files_exist():
-        # Load cached data fast (below you already do that)
-        st.toast("Loaded cached portfolio data.")
-
         # Trigger background refresh only once per session
         try:
             response = requests.post(f"{API_BASE_URL}/portfolio/refresh")
@@ -220,10 +217,15 @@ try:
             st.rerun()
 
 except:
-    st.warning("Failed loading data. Are the stock tickers mapped correctly? Go to 'ticker mapping' page in the sidebar. Check GitHub project documention for instructions.")
+    st.warning(f"Failed loading data. Are the stock tickers mapped correctly? Check GitHub project documention for instructions.")
+    st.page_link("app_pages/ticker_mapping.py", label="Click here to check ticker mapping", icon="ℹ️")
     st.markdown(
         "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
     )
+    if st.button('Clear Cached Data', type="primary"):
+        clear_cache()
+        st.session_state.startup_refresh = False
+        st.rerun()
     st.stop()
 
 # Rename columns
