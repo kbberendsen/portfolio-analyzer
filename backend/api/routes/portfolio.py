@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from fastapi.responses import JSONResponse
 from backend.services.portfolio import calc_portfolio, background_refresh
-from backend.utils.refresh_flag import set_refresh_done, check_refresh_flag
+from backend.utils.refresh_status import set_refresh_status, get_refresh_status
 
 router = APIRouter()
 
@@ -31,10 +31,14 @@ def run_portfolio_calculation():
 
 @router.post("/refresh", status_code=status.HTTP_200_OK, tags=["Portfolio"])
 def refresh_portfolio(background_tasks: BackgroundTasks):
-    set_refresh_done(False)  # reset flag
+    current_status = get_refresh_status()
+    if current_status == "running":
+        raise HTTPException(status_code=409, detail="Portfolio refresh already in progress")
+    
+    set_refresh_status("running")
     background_tasks.add_task(background_refresh)
     return {"message": "Portfolio refresh started in background"}
 
 @router.get("/refresh/status", tags=["Portfolio"])
 def refresh_status():
-    return {"done": check_refresh_flag()}
+    return {"status": get_refresh_status()}

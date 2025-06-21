@@ -165,15 +165,15 @@ def clear_cache():
 if not st.session_state.startup_refresh:
 
     if cached_files_exist():
-        # Trigger background refresh only once per session
         try:
             response = requests.post(f"{API_BASE_URL}/portfolio/refresh")
             if response.status_code == 200:
-                st.session_state["refresh_in_progress"] = True
-            else:
-                st.warning("Failed to start background refresh.")
+                st.session_state.refresh_in_progress = True
+                st.toast("Background refresh started successfully!")
+            elif response.status_code == 409:
+                st.toast("Portfolio refresh already in progress. Please wait.")
         except Exception as e:
-            st.toast(f"WARNING: Background refresh failed: {e}")
+            st.toast(f"Error starting background refresh: {e}")
 
         st.session_state.startup_refresh = True
 

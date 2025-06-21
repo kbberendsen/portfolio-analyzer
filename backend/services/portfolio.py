@@ -7,7 +7,7 @@ import time
 from backend.utils.logger import app_logger
 from backend.services.transactions import get_transactions
 from backend.services.portfolio_analyzer import PortfolioAnalyzer
-from backend.utils.refresh_flag import set_refresh_done
+from backend.utils.refresh_status import set_refresh_status, get_refresh_status
 
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
@@ -263,10 +263,11 @@ def calc_portfolio():
 def background_refresh():
     try:
         app_logger.info("[PORTFOLIO-CALC] Starting background portfolio refresh...")
+        set_refresh_status("running")
         calc_portfolio()
-        set_refresh_done(True)
         app_logger.info("[PORTFOLIO-CALC] Background portfolio refresh completed successfully.")
+        set_refresh_status("idle")
     except Exception:
         app_logger.error("[PORTFOLIO-CALC] Error during background portfolio refresh", exc_info=True)
-        set_refresh_done(False)
+        set_refresh_status("failed")
         raise
