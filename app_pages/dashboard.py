@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import os
 import requests
-import time
 from backend.utils.api import post_api_request
 
 # Config
@@ -343,7 +342,7 @@ if tab_selection == "Monthly":
                             y=filtered_df[selected_metric], 
                             mode='lines', 
                             name=f"{selected_product}", 
-                            line=dict(shape='spline', smoothing=0.7))
+                            line=dict(color="#1f77b4",shape='spline', smoothing=0.7))
         
         fig.update_layout(width=1200, height=500, margin=dict(l=0, r=0, t=50, b=50),)
 
@@ -522,7 +521,7 @@ elif tab_selection == "Daily":
                             y=daily_filtered_df[selected_metric], 
                             mode='lines', 
                             name=f"{selected_product}", 
-                            line=dict(shape='spline', smoothing=0.7))
+                            line=dict(color="#1f77b4", shape='spline', smoothing=0.7))
         
         daily_fig.update_layout(width=1200, height=500, margin=dict(l=0, r=0, t=50, b=50),)
 

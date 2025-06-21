@@ -40,13 +40,14 @@ def update_isin_mapping_json(df: pd.DataFrame):
                 "degiro_name": name,
                 "display_name": name,
                 "exchange": exchange,
+                "product_type": "",
             }
     
     # Ensure the special "FULL_PORTFOLIO" entry exists
     if "FULL_PORTFOLIO" not in existing_mapping:
          existing_mapping["FULL_PORTFOLIO"] = {
             "ticker": "FULL", "degiro_name": "Full portfolio", 
-            "display_name": "Full portfolio", "exchange": ""
+            "display_name": "Full portfolio", "exchange": "", "product_type": ""
          }
 
     # Save the updated mapping back to the JSON file

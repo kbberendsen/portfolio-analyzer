@@ -32,7 +32,7 @@ if 'df' not in st.session_state:
 
         # Flatten the nested dictionary into a DataFrame
         st.session_state.df = pd.DataFrame([
-            {"ISIN": isin, "Ticker": data.get("ticker", ""), "Exchange": data.get("exchange", ""), "Product Name (DeGiro)": data.get("degiro_name", ""), "Display Name": data.get("display_name", "")}
+            {"ISIN": isin, "Ticker": data.get("ticker", ""), "Exchange": data.get("exchange", ""), "Product Name (DeGiro)": data.get("degiro_name", ""), "Display Name": data.get("display_name", ""), "Product Type": data.get("product_type", "")}
             for isin, data in mapping.items()
         ])
     else:
@@ -45,6 +45,19 @@ st.session_state.df = st.session_state.df[st.session_state.df["Ticker"] != "FULL
 # Display editable DataFrame
 edited_df = st.data_editor(
     st.session_state.df.sort_values(by=["Product Name (DeGiro)"], ascending=True),
+    column_config={
+        "Product Type": st.column_config.SelectboxColumn(
+            "Type",
+            help="Type of product (stock, ETF)",
+            width="medium",
+            options=[
+                "Stock",
+                "ETF",
+                "Other",
+            ],
+            required=False,
+        )
+    },
     disabled=["ISIN", "Exchange", "Product Name (DeGiro)"],
     hide_index=True,
     num_rows="fixed",  # Optional: prevents adding new rows manually
@@ -59,7 +72,8 @@ def save_mapping(df):
         "Ticker": "FULL",
         "Exchange": "",
         "Product Name (DeGiro)": "Full portfolio",
-        "Display Name": "Full portfolio"
+        "Display Name": "Full portfolio",
+        "Product Type": ""
     }
     df = df[df["ISIN"] != "FULL_PORTFOLIO"]
     df = pd.concat([df, pd.DataFrame([full_portfolio_entry])], ignore_index=True)
@@ -72,7 +86,8 @@ def save_mapping(df):
             "ticker": row.get("Ticker", ""),
             "degiro_name": row.get("Product Name (DeGiro)", ""),
             "display_name": row.get("Display Name", ""),
-            "exchange": row.get("Exchange", "")
+            "exchange": row.get("Exchange", ""),
+            "product_type": row.get("Product Type", "")
         }
         for _, row in st.session_state.df.iterrows()
     }
@@ -165,7 +180,8 @@ with st.sidebar:
                             "Ticker": data.get("ticker", ""),
                             "Exchange": data.get("exchange", ""),
                             "Product Name (DeGiro)": data.get("degiro_name", ""),
-                            "Display Name": data.get("display_name", "")
+                            "Display Name": data.get("display_name", ""),
+                            "Product Type": data.get("product_type", "")
                         }
                         for isin, data in new_mapping.items()
                     ])

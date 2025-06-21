@@ -158,7 +158,7 @@ if os.path.exists(portfolio_file):
         display_df["Net Performance (%) - Trend"] = display_df["Net Performance (%) - Trend"].apply(remove_flat_line)
 
         # Apply Styler to the "Net Performance" columns
-        display_df = display_df.style.map(color_net_performance, subset=["Net Performance (%)", "Net Return (€)"])
+        display_df_styled = display_df.style.map(color_net_performance, subset=["Net Performance (%)", "Net Return (€)"])
 
     # Top badges
     badge_value_color = 'green' if top_current_value_delta > 0 else 'red' if top_current_value_delta < 0 else 'gray'
@@ -177,7 +177,7 @@ if os.path.exists(portfolio_file):
 
     # Show dataframe
     st.dataframe(
-        display_df,
+        display_df_styled,
         height=df_height_px,
         hide_index=True,
         row_height=50,
