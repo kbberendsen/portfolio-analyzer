@@ -5,10 +5,9 @@ import json
 import warnings
 import time
 from backend.utils.logger import app_logger
-
-# Import services
 from backend.services.transactions import get_transactions
 from backend.services.portfolio_analyzer import PortfolioAnalyzer
+from backend.utils.refresh_flag import set_refresh_done
 
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
@@ -260,3 +259,14 @@ def calc_portfolio():
     except Exception as e:
         app_logger.error(f"[PORTFOLIO-CALC] Error during portfolio calculation: {e}", exc_info=True)
         raise e
+    
+def background_refresh():
+    try:
+        app_logger.info("[PORTFOLIO-CALC] Starting background portfolio refresh...")
+        calc_portfolio()
+        set_refresh_done(True)
+        app_logger.info("[PORTFOLIO-CALC] Background portfolio refresh completed successfully.")
+    except Exception:
+        app_logger.error("[PORTFOLIO-CALC] Error during background portfolio refresh", exc_info=True)
+        set_refresh_done(False)
+        raise

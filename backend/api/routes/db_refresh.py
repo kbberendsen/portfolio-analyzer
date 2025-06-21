@@ -38,11 +38,11 @@ def initial_db_load():
         has_parquet = any(f.name.endswith(".parquet") for f in os.scandir(output_folder))
 
         if not has_parquet:
-            app_logger.info("[DB-REFERSH] No parquet files found. Triggering initial DB load.")
+            app_logger.info("[DB-REFRESH] No parquet files found. Triggering initial DB load.")
             db_refresh()
             return {"message": "No parquet files found. Initial DB load triggered."}
         else:
-            app_logger.info("[DB-REFERSH] Parquet files exist. No initial DB load needed.")
+            app_logger.info("[DB-REFRESH] Parquet files exist. No initial DB load needed.")
             return {"message": "Parquet files exist. No initial DB load needed."}
     except Exception as e:
         app_logger.error("[DB-REFRESH] Error during initial DB load check", exc_info=True)

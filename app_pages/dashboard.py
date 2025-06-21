@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import os
 import requests
+import time
 from backend.utils.api import post_api_request
 
 # Config
@@ -16,6 +17,14 @@ def is_backend_alive():
         return response.status_code == 200
     except requests.exceptions.RequestException:
         return False
+    
+def cached_files_exist():
+    cached_files = [
+        os.path.join('output', 'portfolio_performance_daily.parquet'),
+        os.path.join('output', 'portfolio_performance_monthly.parquet'),
+        os.path.join('output', 'stock_prices.parquet')
+    ]
+    return all(os.path.exists(f) for f in cached_files)
 
 # Backend triggers
 def trigger_portfolio_calculation():
@@ -152,12 +161,30 @@ def clear_cache():
 
     st.info("Cached data cleared. Refreshing data. This will take some time.")
 
-# Startup loading spinner
+# Startup refresh logic
 if not st.session_state.startup_refresh:
-    with loading_placeholder.container():
-        with st.spinner("Loading data..."):
+
+    if cached_files_exist():
+        # Load cached data fast (below you already do that)
+        st.toast("Loaded cached portfolio data.")
+
+        # Trigger background refresh only once per session
+        try:
+            response = requests.post(f"{API_BASE_URL}/portfolio/refresh")
+            if response.status_code == 200:
+                st.session_state["refresh_in_progress"] = True
+            else:
+                st.warning("Failed to start background refresh.")
+        except Exception as e:
+            st.toast(f"WARNING: Background refresh failed: {e}")
+
+        st.session_state.startup_refresh = True
+
+    else:
+        # No cached files -> Run blocking calculation synchronously
+        with st.spinner("No cached data found. Running initial portfolio calculation..."):
             refresh_data()
-            st.session_state.startup_refresh = True  # Mark that refresh has run
+            st.session_state.startup_refresh = True
 
 # Clear the placeholder once the data is ready
 loading_placeholder.empty()
