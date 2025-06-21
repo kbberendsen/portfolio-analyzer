@@ -9,7 +9,7 @@ DEV_MODE = os.getenv("DEV_MODE", "False").lower() in ("true", "1", "yes")
 if DEV_MODE:
     from dotenv import load_dotenv
     load_dotenv(dotenv_path=".env")  # Safe even if file is missing
-    app_logger.info(".env file loaded in DEV_MODE (api)")
+    app_logger.info("[STARTUP] .env file loaded in DEV_MODE (api)")
 
 app = FastAPI(
     title="Portfolio Analyzer API",
@@ -30,4 +30,4 @@ async def read_root():
 
 start_scheduled_tasks()
 
-app_logger.info("FastAPI app started.")
+app_logger.info("[STARTUP] FastAPI app started.")

@@ -54,7 +54,7 @@ with st.sidebar.expander("View Logs", expanded=False):
     if not log_files:
         st.info("No log files found.")
     else:
-        selected_log = st.selectbox("Select log file", log_files)
+        selected_log = st.selectbox("Select log file", options=[""] + log_files, format_func=lambda x: x or "— Select a file —")
         if selected_log:
             content = read_last_n_lines_reversed(selected_log, 100)
             st.text_area(f"Contents of {selected_log} (most recent first)", content, height=300)

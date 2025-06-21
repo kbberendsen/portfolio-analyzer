@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from backend.services.portfolio import calc_portfolio
-from backend.utils.logger import app_logger
 
 router = APIRouter()
 

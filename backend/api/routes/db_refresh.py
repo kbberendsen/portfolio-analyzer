@@ -14,7 +14,7 @@ router = APIRouter()
 )
 def refresh_database():
     try:
-        app_logger.info("Database refresh triggered via /refresh endpoint.")
+        app_logger.info("[DB-REFRESH] Database refresh triggered via /refresh endpoint.")
         db_refresh()
         return {"message": "Database refresh completed successfully."}
     except Exception as e:
@@ -33,19 +33,19 @@ def refresh_database():
 )
 def initial_db_load():
     try:
-        app_logger.info("Initial DB load check started.")
+        app_logger.info("[DB-REFRESH] Initial DB load check started.")
         output_folder = "output"
         has_parquet = any(f.name.endswith(".parquet") for f in os.scandir(output_folder))
 
         if not has_parquet:
-            app_logger.info("No parquet files found. Triggering initial DB load.")
+            app_logger.info("[DB-REFERSH] No parquet files found. Triggering initial DB load.")
             db_refresh()
             return {"message": "No parquet files found. Initial DB load triggered."}
         else:
-            app_logger.info("Parquet files exist. No initial DB load needed.")
+            app_logger.info("[DB-REFERSH] Parquet files exist. No initial DB load needed.")
             return {"message": "Parquet files exist. No initial DB load needed."}
     except Exception as e:
-        app_logger.error("Error during initial DB load check", exc_info=True)
+        app_logger.error("[DB-REFRESH] Error during initial DB load check", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred while checking parquet files: {e}"

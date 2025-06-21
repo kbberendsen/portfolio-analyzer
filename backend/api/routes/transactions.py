@@ -25,7 +25,7 @@ def get_all_transactions():
             return []  # Return an empty list if no transactions are found.
     except Exception as e:
         # If an error occurs while fetching transactions, raise an HTTP exception.
-        app_logger.error("An error occurred while fetching transactions", exc_info=True)
+        app_logger.error("[TRANSACTIONS] An error occurred while fetching transactions", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred while fetching transactions: {e}"

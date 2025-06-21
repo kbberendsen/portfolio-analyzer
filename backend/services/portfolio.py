@@ -13,7 +13,7 @@ from backend.services.portfolio_analyzer import PortfolioAnalyzer
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
 def calc_portfolio():
-    app_logger.info("Starting portfolio calculation...")
+    app_logger.info("[PORTFOLIO-CALC] Starting portfolio calculation...")
 
     try:
         # Start timing
@@ -21,21 +21,21 @@ def calc_portfolio():
 
         # Get the transactions DataFrame from the service
         transactions_df = get_transactions()
-        app_logger.info(f"Retrieved transactions DataFrame with {len(transactions_df)} rows.")
+        app_logger.info(f"[PORTFOLIO-CALC] Retrieved transactions DataFrame with {len(transactions_df)} rows.")
         
         # Instantiate the analyzer with the transaction data
         analyzer = PortfolioAnalyzer(transactions_df)
 
         if transactions_df.empty:
-            app_logger.warning("No transactions found. Skipping portfolio calculation.")
+            app_logger.warning("[PORTFOLIO-CALC] No transactions found. Skipping portfolio calculation.")
             return
         
-        app_logger.info('Retrieving portfolio data...')
+        app_logger.info("[PORTFOLIO-CALC] Retrieving portfolio data...")
         
         # Fix data types and definitions
         transactions = transactions_df[transactions_df["Stock"].notna() & (transactions_df["Stock"] != '')]
         if transactions.empty:
-            app_logger.warning("No valid transactions with a stock ticker. Skipping portfolio calculation.")
+            app_logger.warning("[PORTFOLIO-CALC] No valid transactions with a stock ticker. Skipping portfolio calculation.")
             return
         
         transactions["Date"] = pd.to_datetime(transactions["Date"])
@@ -43,7 +43,7 @@ def calc_portfolio():
         today = datetime.today()
         end_dates = pd.date_range(start=start_date, end=today, freq='D')[1:]  # Exclude the start_date itself
 
-        app_logger.info(f"Processing portfolio performance from {start_date.strftime('%Y-%m-%d')} to {today.strftime('%Y-%m-%d')}")
+        app_logger.info(f"[PORTFOLIO-CALC] Processing portfolio performance from {start_date.strftime('%Y-%m-%d')} to {today.strftime('%Y-%m-%d')}")
 
         # Initialize an empty list to store portfolio data for each day
         portfolio_results_list = []
@@ -86,15 +86,15 @@ def calc_portfolio():
         
         # Load existing results from Parquet file
         try:
-            portfolio_results_df = pd.read_parquet('output/portfolio_performance_daily.parquet')
-            app_logger.info('Loaded portfolio_performance_daily from Parquet')
+            portfolio_results_df = pd.read_parquet("output/portfolio_performance_daily.parquet")
+            app_logger.info("[PORTFOLIO-CALC] Loaded portfolio_performance_daily from Parquet")
 
             # Remove last 2 days to force refresh (get end of day data)
             last_2_days = sorted(portfolio_results_df['end_date'].unique())[-2:]
             portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
 
         except Exception as e:
-            app_logger.warning(f'Failed to load portfolio_performance_daily from Parquet: {e}')
+            app_logger.warning(f"[PORTFOLIO-CALC] Failed to load portfolio_performance_daily from Parquet: {e}")
             portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
                                                             'avg_cost', 'total_cost', 'transaction_costs', 'current_value', 
                                                             'current_money_weighted_return', 'realized_return', 
@@ -106,9 +106,9 @@ def calc_portfolio():
             stock_prices_df = pd.read_parquet('output/stock_prices.parquet')
             stock_prices_df = stock_prices_df.dropna(subset=['price'])
             stock_prices_dict = stock_prices_df.groupby('ticker').apply(lambda x: x.set_index('date')['price'].to_dict()).to_dict()
-            app_logger.info('Loaded stock_prices from Parquet')
+            app_logger.info("[PORTFOLIO-CALC] Loaded stock_prices from Parquet")
         except Exception as e:
-            app_logger.warning(f'Failed to load stock_prices from Parquet: {e}')
+            app_logger.warning(f"[PORTFOLIO-CALC] Failed to load stock_prices from Parquet: {e}")
             stock_prices_dict = {}
 
 
@@ -138,13 +138,13 @@ def calc_portfolio():
                 if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
                     continue  # Skip if already present
 
-                app_logger.info(f'Retrieving data for: {end_date_str}')
+                app_logger.info(f"[PORTFOLIO-CALC] Retrieving data for: {end_date_str}")
 
                 # Ensure that the transactions before the end date are not empty
                 transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
 
                 if transactions_before_end.empty:
-                    app_logger.info(f"No transactions found for date: {end_date_str}. Skipping...")
+                    app_logger.info(f"[PORTFOLIO-CALC] No transactions found for date: {end_date_str}. Skipping...")
                     continue
 
                 stock_list = list(transactions_before_end["Stock"].unique())
@@ -162,7 +162,7 @@ def calc_portfolio():
                     
                     # Check if portfolio_data is valid before proceeding
                     if portfolio_data is None or not isinstance(portfolio_data, dict):
-                        app_logger.warning(f"Stock data is missing or invalid for date: {end_date_str}. Result: {result}")
+                        app_logger.warning(f"[PORTFOLIO-CALC] Stock data is missing or invalid for date: {end_date_str}. Result: {result}")
                         continue
                     
                     # Ensure end_date is included in the portfolio_data
@@ -172,7 +172,7 @@ def calc_portfolio():
                     portfolio_results_list.append(portfolio_data)
 
             except Exception as e:
-                app_logger.warning(f'Failed to retrieve daily data for {end_date}: {e}')
+                app_logger.warning(f"[PORTFOLIO-CALC] Failed to retrieve daily data for {end_date}: {e}")
                 continue
 
         # Combine the list into a DataFrame if there are new results
@@ -226,7 +226,7 @@ def calc_portfolio():
         stock_prices_df = stock_prices_df.dropna(subset=['price'])
         stock_prices_df.to_parquet(os.path.join('output', 'stock_prices.parquet'), index=False)
 
-        app_logger.info('Daily output saved locally')
+        app_logger.info("[PORTFOLIO-CALC] Daily output saved locally")
 
         # Extract monthly data from the daily data
         monthly_results = portfolio_results_df.copy()
@@ -250,13 +250,13 @@ def calc_portfolio():
 
         # Save the updated DataFrame to a Parquet file
         monthly_results_df.to_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'), index=False)
-        app_logger.info('Monthly output saved locally')
+        app_logger.info("[PORTFOLIO-CALC] Monthly output saved locally")
         # End timing
         end_time = time.time()
-        app_logger.info(f"Execution time: {round(end_time - start_time, 2)} seconds")
+        app_logger.info(f"[PORTFOLIO-CALC] Execution time: {round(end_time - start_time, 2)} seconds")
 
-        app_logger.info(f"Portfolio calculation completed successfully ({round(end_time - start_time, 2)}s)")
+        app_logger.info(f"[PORTFOLIO-CALC] Portfolio calculation completed successfully ({round(end_time - start_time, 2)}s)")
     
     except Exception as e:
-        app_logger.error(f"Error during portfolio calculation: {e}", exc_info=True)
+        app_logger.error(f"[PORTFOLIO-CALC] Error during portfolio calculation: {e}", exc_info=True)
         raise e
