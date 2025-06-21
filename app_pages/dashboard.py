@@ -3,11 +3,19 @@ import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
 import os
+import requests
 from backend.utils.api import post_api_request
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
+
+def is_backend_alive():
+    try:
+        response = requests.get(API_BASE_URL, timeout=2)
+        return response.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
 
 # Backend triggers
 def trigger_portfolio_calculation():
@@ -50,6 +58,11 @@ with st.sidebar.expander("View Logs", expanded=False):
         if selected_log:
             content = read_last_n_lines_reversed(selected_log, 100)
             st.text_area(f"Contents of {selected_log} (most recent first)", content, height=300)
+
+# Check if backend is alive
+if not is_backend_alive():
+    st.error("Backend API is not reachable. Please ensure the backend is running.")
+    st.stop()  # Stop execution if backend is not reachable
 
 st.title("Stock Portfolio Dashboard")
 

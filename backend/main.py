@@ -1,7 +1,15 @@
+import os
 from fastapi import FastAPI
 from backend.api.routes import portfolio, transactions, db_refresh, logs, debug
 from backend.utils.scheduler import start_scheduled_tasks
 from backend.utils.logger import app_logger
+
+# Load .env only in development
+DEV_MODE = os.getenv("DEV_MODE", "False").lower() in ("true", "1", "yes")
+if DEV_MODE:
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=".env")  # Safe even if file is missing
+    app_logger.info(".env file loaded in DEV_MODE (api)")
 
 app = FastAPI(
     title="Portfolio Analyzer API",
