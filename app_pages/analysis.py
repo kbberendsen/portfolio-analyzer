@@ -147,6 +147,15 @@ if os.path.exists(portfolio_file):
         display_df = display_df[['Product', 'Current Allocation %' ,'Quantity', 'Current Value (€)', 
                                  'Net Return (€)', 'Net Performance (%)', 'Net Performance (%) - Trend', 'Total Cost (€)'
                         ]]
+        
+        def remove_flat_line(arr):
+            if len(arr) == 0:
+                return None
+            if min(arr) == max(arr):
+                return None
+            return arr
+
+        display_df["Net Performance (%) - Trend"] = display_df["Net Performance (%) - Trend"].apply(remove_flat_line)
 
         # Apply Styler to the "Net Performance" columns
         display_df = display_df.style.map(color_net_performance, subset=["Net Performance (%)", "Net Return (€)"])
