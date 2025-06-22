@@ -157,65 +157,66 @@ if st.button("Auto-fill empty tickers using display name"):
 if st.button("Save mapping"):
     save_mapping(edited_df)
 
-# Move the file uploader and refresh button to the sidebar
-with st.sidebar:
-    with st.expander("Upload/download mapping JSON file", expanded=False):
+st.divider()
 
-        # JSON mapping file uploader
-        uploaded_mapping = st.file_uploader("Upload ISIN mapping JSON file", type=["json"])
+# File uploader and refresh button
+with st.expander("Upload/download mapping JSON file", expanded=False):
 
-        if uploaded_mapping:
-            try:
-                # Read and parse the uploaded JSON file
-                new_mapping = json.load(uploaded_mapping)
-                
-                # Validate keys and structure (basic check)
-                if not isinstance(new_mapping, dict):
-                    st.error("Uploaded JSON is not a valid dictionary.")
-                else:
-                    # Update session state DataFrame from uploaded JSON
-                    st.session_state.df = pd.DataFrame([
-                        {
-                            "ISIN": isin,
-                            "Ticker": data.get("ticker", ""),
-                            "Exchange": data.get("exchange", ""),
-                            "Product Name (DeGiro)": data.get("degiro_name", ""),
-                            "Display Name": data.get("display_name", ""),
-                            "Product Type": data.get("product_type", "")
-                        }
-                        for isin, data in new_mapping.items()
-                    ])
+    # JSON mapping file uploader
+    uploaded_mapping = st.file_uploader("Upload ISIN mapping JSON file", type=["json"])
 
-                    # Save uploaded mapping to file to overwrite existing one
-                    with open(mapping_path, 'w') as f:
-                        json.dump(new_mapping, f, indent=4)
+    if uploaded_mapping:
+        try:
+            # Read and parse the uploaded JSON file
+            new_mapping = json.load(uploaded_mapping)
+            
+            # Validate keys and structure (basic check)
+            if not isinstance(new_mapping, dict):
+                st.error("Uploaded JSON is not a valid dictionary.")
+            else:
+                # Update session state DataFrame from uploaded JSON
+                st.session_state.df = pd.DataFrame([
+                    {
+                        "ISIN": isin,
+                        "Ticker": data.get("ticker", ""),
+                        "Exchange": data.get("exchange", ""),
+                        "Product Name (DeGiro)": data.get("degiro_name", ""),
+                        "Display Name": data.get("display_name", ""),
+                        "Product Type": data.get("product_type", "")
+                    }
+                    for isin, data in new_mapping.items()
+                ])
 
-                    st.success("Mapping file uploaded and loaded successfully!")
-                    st.rerun()
+                # Save uploaded mapping to file to overwrite existing one
+                with open(mapping_path, 'w') as f:
+                    json.dump(new_mapping, f, indent=4)
 
-            except Exception as e:
-                st.error(f"Error loading uploaded JSON file: {e}")
-        
-        if os.path.exists(mapping_path):
-            with open(mapping_path, 'rb') as f:
-                json_bytes = f.read()
+                st.success("Mapping file uploaded and loaded successfully!")
+                st.rerun()
 
-        # Download button for the current mapping
-        st.download_button(
-            label="Download current ISIN mapping as JSON",
-            data=json_bytes,
-            file_name="isin_mapping.json",
-            mime="application/json"
-        )
+        except Exception as e:
+            st.error(f"Error loading uploaded JSON file: {e}")
+    
+    if os.path.exists(mapping_path):
+        with open(mapping_path, 'rb') as f:
+            json_bytes = f.read()
 
-    # Reset tickers logic with confirmation
-    with st.expander("⚠️ Reset all tickers and display names (this cannot be undone)", expanded=False):
-        st.warning("This will clear all tickers from the table and reset altered display names. Are you sure?")
-        if st.button("Reset", type="primary"):
-            reset_df = st.session_state.df.copy()
-            reset_df["Ticker"] = ""
-            reset_df["Display Name"] = reset_df["Product Name (DeGiro)"]
-            st.session_state.df = reset_df
-            save_mapping(reset_df)
-            st.success("All tickers and display names have been reset.")
-            st.rerun()
+    # Download button for the current mapping
+    st.download_button(
+        label="Download current ISIN mapping as JSON",
+        data=json_bytes,
+        file_name="isin_mapping.json",
+        mime="application/json"
+    )
+
+# Reset tickers logic with confirmation
+with st.expander("⚠️ Reset all tickers and display names (this cannot be undone)", expanded=False):
+    st.warning("This will clear all tickers from the table and reset altered display names. Are you sure?")
+    if st.button("Reset", type="primary"):
+        reset_df = st.session_state.df.copy()
+        reset_df["Ticker"] = ""
+        reset_df["Display Name"] = reset_df["Product Name (DeGiro)"]
+        st.session_state.df = reset_df
+        save_mapping(reset_df)
+        st.success("All tickers and display names have been reset.")
+        st.rerun()

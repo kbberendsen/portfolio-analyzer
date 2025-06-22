@@ -42,123 +42,122 @@ if os.path.exists(portfolio_file):
     # Remove 'Full Portfolio' entry
     df = df[df["Product"] != "Full portfolio"]
 
-    with st.sidebar:
-        # Set the default date to most recent end date
-        default_selected_date = df['End Date'].max()
-        
-        # Date selection
-        selected_date = st.sidebar.date_input("Select End Date", default_selected_date, min_value=df["End Date"].min(), max_value=df["End Date"].max())
-        selected_date = pd.to_datetime(selected_date)
+    # Set the default date to most recent end date
+    default_selected_date = df['End Date'].max()
+    
+    # Date selection
+    selected_date = st.date_input("Select End Date", default_selected_date, min_value=df["End Date"].min(), max_value=df["End Date"].max(), width=250)
+    selected_date = pd.to_datetime(selected_date)
+    
+    holdings_option = st.segmented_control(
+        "Holdings to include",
+        options=["Current Holdings", "All Holdings"],
+        default="Current Holdings",
+        selection_mode="single",
+        help="Current Holdings only include products with a non-zero current value"
+    )
 
-        # Add holdings type selector
-        holdings_option = st.radio(
-            "Select Holdings View",
-            options=["Current Holdings", "All Holdings"],
-            index=0,
-            help="Current Holdings only include products with a non-zero current value"
-        )
+    filtered_df = df[df['End Date'] <= selected_date]
+    if filtered_df.empty:
+        st.error("No data found for the selected date. Please select a different date.")
+        st.stop()
+    
+    # Get recent two distinct dates
+    filtered_dates = filtered_df['End Date'].unique()[-2:]
+    filtered_dates = sorted(filtered_dates)
+    date_0 = filtered_dates[0]
+    date_1 = filtered_dates[1] if len(filtered_dates) > 1 else date_0
 
-        filtered_df = df[df['End Date'] <= selected_date]
-        if filtered_df.empty:
-            st.error("No data found for the selected date. Please select a different date.")
-            st.stop()
-        
-        # Get recent two distinct dates
-        filtered_dates = filtered_df['End Date'].unique()[-2:]
-        filtered_dates = sorted(filtered_dates)
-        date_0 = filtered_dates[0]
-        date_1 = filtered_dates[1] if len(filtered_dates) > 1 else date_0
+    # Top net return
+    top_net_return_start = filtered_df[filtered_df['End Date'] == date_0].get('Net Return (€)', 0).sum()
+    top_net_return_end = filtered_df[filtered_df['End Date'] == date_1].get('Net Return (€)', 0).sum()
 
-        # Top net return
-        top_net_return_start = filtered_df[filtered_df['End Date'] == date_0].get('Net Return (€)', 0).sum()
-        top_net_return_end = filtered_df[filtered_df['End Date'] == date_1].get('Net Return (€)', 0).sum()
+    if top_net_return_start != 0:
+        top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
+        top_net_return_delta_eur = f"+€ {abs(top_net_return_delta)}" if top_net_return_delta > 0 else f"-€ {abs(top_net_return_delta)}"
+        top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/abs(top_net_return_start))*100, 2)
+    else:
+        top_net_return_delta_eur = 0
+        top_net_return_delta_per = 0
 
-        if top_net_return_start != 0:
-            top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
-            top_net_return_delta_eur = f"+€ {abs(top_net_return_delta)}" if top_net_return_delta > 0 else f"-€ {abs(top_net_return_delta)}"
-            top_net_return_delta_per = round(((top_net_return_end-top_net_return_start)/abs(top_net_return_start))*100, 2)
-        else:
-            top_net_return_delta_eur = 0
-            top_net_return_delta_per = 0
+    # Top current value
+    top_current_value_start = filtered_df[filtered_df['End Date'] == date_0].get('Current Value (€)', 0).sum()
+    top_current_value_end = filtered_df[filtered_df['End Date'] == date_1].get('Current Value (€)', 0).sum()
 
-        # Top current value
-        top_current_value_start = filtered_df[filtered_df['End Date'] == date_0].get('Current Value (€)', 0).sum()
-        top_current_value_end = filtered_df[filtered_df['End Date'] == date_1].get('Current Value (€)', 0).sum()
+    if top_current_value_start != 0:
+        top_current_value_delta = round((top_current_value_end-top_current_value_start), 2)
+        top_current_value_delta_eur = f"+€ {abs(top_current_value_delta)}" if top_current_value_delta > 0 else f"-€ {abs(top_current_value_delta)}"
+        top_current_value_delta_per = round(((top_current_value_end-top_current_value_start)/(top_current_value_start))*100, 2)
+    else:
+        top_current_value_delta_eur = 0
+        top_current_value_delta_per = 0
 
-        if top_current_value_start != 0:
-            top_current_value_delta = round((top_current_value_end-top_current_value_start), 2)
-            top_current_value_delta_eur = f"+€ {abs(top_current_value_delta)}" if top_current_value_delta > 0 else f"-€ {abs(top_current_value_delta)}"
-            top_current_value_delta_per = round(((top_current_value_end-top_current_value_start)/(top_current_value_start))*100, 2)
-        else:
-            top_current_value_delta_eur = 0
-            top_current_value_delta_per = 0
+    # Today profit/loss
+    today_pl = top_net_return_delta
+    today_pl_per = top_net_return_delta_per
 
-        # Today profit/loss
-        today_pl = top_net_return_delta
-        today_pl_per = top_net_return_delta_per
+    # Filter the DataFrame for the recent selected date
+    selected_day_df = df[df['End Date'] == date_1]
 
-        # Filter the DataFrame for the recent selected date
-        selected_day_df = df[df['End Date'] == date_1]
+    # Total profit/loss
+    total_pl = selected_day_df['Net Return (€)'].sum()
+    total_pl_per = selected_day_df['Net Return (€)'].sum() / selected_day_df['Total Cost (€)'].sum() * 100 if selected_day_df['Total Cost (€)'].sum() != 0 else 0
+    
+    # Filter based on holdings option
+    if holdings_option == "Current Holdings":
+        selected_day_df = selected_day_df[selected_day_df["Quantity"] != 0]
 
-        # Total profit/loss
-        total_pl = selected_day_df['Net Return (€)'].sum()
-        total_pl_per = selected_day_df['Net Return (€)'].sum() / selected_day_df['Total Cost (€)'].sum() * 100 if selected_day_df['Total Cost (€)'].sum() != 0 else 0
-        
-        # Filter based on holdings option
-        if holdings_option == "Current Holdings":
-            selected_day_df = selected_day_df[selected_day_df["Quantity"] != 0]
+    # Prepare display df
+    display_df = selected_day_df.copy()
 
-        # Prepare display df
-        display_df = selected_day_df.copy()
+    # Only select relevant columns
+    display_df = display_df[['Product', 'Quantity', 'Current Value (€)', 
+                                'Net Return (€)', 'Net Performance (%)', 'Total Cost (€)'
+                    ]]
 
-        # Only select relevant columns
-        display_df = display_df[['Product', 'Quantity', 'Current Value (€)', 
-                                 'Net Return (€)', 'Net Performance (%)', 'Total Cost (€)'
-                        ]]
+    # Create new column with 30-day Net Performance (%) trend as list
+    date_L30 = date_1 - timedelta(days=30)
+    display_df["Net Performance (%) - Trend"] = display_df.apply(
+        lambda row: df[
+            (df["Product"] == row["Product"]) &
+            (df["End Date"] >= date_L30) &
+            (df["End Date"] <= date_1)
+        ]["Net Performance (%)"].tolist(),
+        axis=1
+    )
 
-        # Create new column with 30-day Net Performance (%) trend as list
-        date_L30 = date_1 - timedelta(days=30)
-        display_df["Net Performance (%) - Trend"] = display_df.apply(
-            lambda row: df[
-                (df["Product"] == row["Product"]) &
-                (df["End Date"] >= date_L30) &
-                (df["End Date"] <= date_1)
-            ]["Net Performance (%)"].tolist(),
-            axis=1
-        )
+    # Allocation
+    display_df["Current Allocation %"] = display_df['Current Value (€)'] / display_df['Current Value (€)'].sum() * 100
 
-        # Allocation
-        display_df["Current Allocation %"] = display_df['Current Value (€)'] / display_df['Current Value (€)'].sum() * 100
+    # Sort products by allocation and then by total cost
+    display_df = display_df.sort_values(
+        by=['Current Allocation %', 'Total Cost (€)'],
+        ascending=[False, False]
+    )
 
-        # Sort products by allocation and then by total cost
-        display_df = display_df.sort_values(
-            by=['Current Allocation %', 'Total Cost (€)'],
-            ascending=[False, False]
-        )
+    df_height_px = 50*len(display_df)+37
 
-        df_height_px = 50*len(display_df)+37
+    # Custom styling function
+    def color_net_performance(val):
+        color = '#09ab3b' if val > 0 else '#ff2b2b' if val < 0 else 'gray'
+        return f'color: {color}'
+    
+    # Final column order
+    display_df = display_df[['Product', 'Current Allocation %' ,'Quantity', 'Current Value (€)', 
+                                'Net Return (€)', 'Net Performance (%)', 'Net Performance (%) - Trend', 'Total Cost (€)'
+                    ]]
+    
+    def remove_flat_line(arr):
+        if len(arr) == 0:
+            return None
+        if min(arr) == max(arr):
+            return None
+        return arr
 
-        # Custom styling function
-        def color_net_performance(val):
-            color = '#09ab3b' if val > 0 else '#ff2b2b' if val < 0 else 'gray'
-            return f'color: {color}'
-        
-        # Final column order
-        display_df = display_df[['Product', 'Current Allocation %' ,'Quantity', 'Current Value (€)', 
-                                 'Net Return (€)', 'Net Performance (%)', 'Net Performance (%) - Trend', 'Total Cost (€)'
-                        ]]
-        
-        def remove_flat_line(arr):
-            if len(arr) == 0:
-                return None
-            if min(arr) == max(arr):
-                return None
-            return arr
+    display_df["Net Performance (%) - Trend"] = display_df["Net Performance (%) - Trend"].apply(remove_flat_line)
 
-        display_df["Net Performance (%) - Trend"] = display_df["Net Performance (%) - Trend"].apply(remove_flat_line)
-
-        # Apply Styler to the "Net Performance" columns
-        display_df_styled = display_df.style.map(color_net_performance, subset=["Net Performance (%)", "Net Return (€)"])
+    # Apply Styler to the "Net Performance" columns
+    display_df_styled = display_df.style.map(color_net_performance, subset=["Net Performance (%)", "Net Return (€)"])
 
     # Top badges
     badge_value_color = 'green' if top_current_value_delta > 0 else 'red' if top_current_value_delta < 0 else 'gray'

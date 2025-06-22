@@ -157,25 +157,25 @@ if os.path.exists(portfolio_file):
 
     rerun = 0
 
-    with st.sidebar:
-        # Refresh Button to update the CSV
-        if st.button('Refresh Data'):
-            refresh_data()
-            calculate_new_values()
+    st.divider()
 
-        # Refresh stock prices by clearing cache, then rerunning
-        if st.button("Refresh Stock Prices"):
-            # Clear cached stock price data
-            get_current_stock_price.clear()  
+    # Refresh Button to update the CSV
+    if st.button('Refresh Data'):
+        refresh_data()
+        calculate_new_values()
 
-            # Remove result_df by making it an empty dataframe
-            data = []
-            st.session_state.result_df = pd.DataFrame(data)
-            
-            # Rerun page
-            st.rerun()
+    # Refresh stock prices by clearing cache, then rerunning
+    if st.button("Refresh Stock Prices"):
+        # Clear cached stock price data
+        get_current_stock_price.clear()  
+
+        # Remove result_df by making it an empty dataframe
+        data = []
+        st.session_state.result_df = pd.DataFrame(data)
+        
+        # Rerun page
+        st.rerun()
 else:
-    with st.sidebar:
-        if st.button('Refresh Data'):
-            refresh_data()
+    if st.button('Refresh Data'):
+        refresh_data()
     st.error("Portfolio data not found. Please refresh the dashboard to update the data.")
