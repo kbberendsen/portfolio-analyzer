@@ -64,42 +64,48 @@ if os.path.exists(portfolio_file):
 
     # DATE  FILTER    
     # Set the full date range as min and max values for the slider
-    max_date = merged_df['End Date'].max().to_pydatetime()
-    min_date = merged_df['End Date'].min().to_pydatetime()
-
-    # Set the default range to the last 356 days
-    default_start_date = max_date - timedelta(days=365)
+    max_date = df['End Date'].max().to_pydatetime()
+    min_date = df['End Date'].min().to_pydatetime()
 
     # Date selection
     date_selection = st.segmented_control(
         "Date Range",
-        options=["1Y", "3M", "1M", "1W", "1D", "Last year", "Last month", "All time"],
+        options=["1Y", "3M", "1M", "1W", "YTD", "Last year", "Last month", "All time"],
         default="1Y",
         selection_mode="single",
     )
 
-    # Precompute dynamic date values
-    days_since_year_start = (max_date - max_date.replace(month=1, day=1)).days
+    # Key date anchors
+    first_day_this_year = max_date.replace(month=1, day=1)
     first_day_this_month = max_date.replace(day=1)
+
+    # Days since start of this year/month
+    days_since_year_start = (max_date - first_day_this_year).days
     days_since_month_start = (max_date - first_day_this_month).days
 
-    # Previous month calculation
+    # Previous month range
     last_day_prev_month = first_day_this_month - timedelta(days=1)
     first_day_prev_month = last_day_prev_month.replace(day=1)
     days_in_last_month = (last_day_prev_month - first_day_prev_month).days + 1
 
-    # Now keep the mapping tidy
+    # Previous year range
+    first_day_prev_year = first_day_this_year.replace(year=max_date.year - 1)
+    last_day_prev_year = first_day_prev_year.replace(month=12, day=31)
+    days_in_last_year = (last_day_prev_year - first_day_prev_year).days + 1
+
+    # Final mapping
     date_mapping = {
         "1Y": [365, 0],
         "3M": [90, 0],
         "1M": [30, 0],
         "1W": [7, 0],
         "1D": [1, 0],
-        "Last year": [365 + days_since_year_start, days_since_year_start],
-        "Last month": [days_in_last_month + days_since_month_start, days_since_month_start],
+        "YTD": [days_since_year_start, 0],
+        "Last year": [days_in_last_year+days_since_year_start, days_since_year_start + 1],  # +1 to exclude Jan 1
+        "Last month": [days_in_last_month+days_since_month_start, days_since_month_start + 1],  # +1 to exclude 1st of current month
         "All time": [(max_date - min_date).days, 0]
     }
-
+    
     selected_start_date = max_date - timedelta(days=date_mapping[date_selection][0])
     selected_end_date = max_date - timedelta(days=date_mapping[date_selection][1])
 
@@ -110,7 +116,7 @@ if os.path.exists(portfolio_file):
     # Performance metrics
     performance_metrics = ["Net Performance (%)", "Net Return (€)", "Total Cost (€)", "Current Value (€)"]
     default_index_per = performance_metrics.index("Current Value (€)")
-    selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select")
+    selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select", width=250)
     
     # Group by Product Type and aggregate Net Return (€) and Total Cost (€)
     split_df = (

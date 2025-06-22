@@ -199,10 +199,10 @@ rename_dict = {
 
 try:
     # Load daily data
-    daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
+    df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
 
-    # If daily_df is empty
-    if daily_df.empty:
+    # If df is empty
+    if df.empty:
         if st.button('Force refresh', type="primary"):
             trigger_portfolio_calculation()
             st.session_state.startup_refresh = False
@@ -221,16 +221,16 @@ except:
     st.stop()
 
 # Rename columns
-daily_df = daily_df.rename(columns=rename_dict)
+df = df.rename(columns=rename_dict)
 
 # Convert dates to datetime format
-daily_df['Start Date'] = pd.to_datetime(daily_df['Start Date'])
-daily_df['End Date'] = pd.to_datetime(daily_df['End Date'])
+df['Start Date'] = pd.to_datetime(df['Start Date'])
+df['End Date'] = pd.to_datetime(df['End Date'])
 
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:
     # Sort product options
-    product_options = sorted(daily_df['Product'].unique().tolist())
+    product_options = sorted(df['Product'].unique().tolist())
     if "Full portfolio" in product_options:
         product_options.remove("Full portfolio")
         product_options.insert(0, "Full portfolio")
@@ -244,43 +244,72 @@ with st.sidebar:
     selected_compare_product = st.selectbox("Compare with another Product", options=compare_product_options, index=0, key="compare_product_select")
 
     # Performance metrics
-    performance_metrics = [col for col in daily_df.columns if col not in ['Product', 'Ticker', 'Start Date', 'End Date']]
+    performance_metrics = [col for col in df.columns if col not in ['Product', 'Ticker', 'Start Date', 'End Date']]
     default_index_per = performance_metrics.index("Net Performance (%)")
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select")
 
-st.subheader(f"{selected_product}")
-
 # Filter on product
-daily_product_df = daily_df[daily_df['Product'] == selected_product]
-daily_compare_product_df = daily_df[daily_df['Product'] == selected_compare_product] if selected_compare_product != "None" else pd.DataFrame()
+product_df = df[df['Product'] == selected_product]
+compare_product_df = df[df['Product'] == selected_compare_product] if selected_compare_product != "None" else pd.DataFrame()
 
-with st.sidebar:
+# DATE  FILTER    
+# Set the full date range as min and max values for the slider
+max_date = df['End Date'].max().to_pydatetime()
+min_date = df['End Date'].min().to_pydatetime()
 
-    # Set the full date range as min and max values for the slider
-    daily_max_date = daily_df['End Date'].max().to_pydatetime()
-    daily_min_date = daily_df['End Date'].min().to_pydatetime()
+# Date selection
+date_selection = st.segmented_control(
+    "Date Range",
+    options=["1Y", "3M", "1M", "1W", "YTD", "Last year", "Last month", "All time"],
+    default="1Y",
+    selection_mode="single",
+)
 
-    # Set the default range to the last 365 days
-    default_start_date = daily_max_date - timedelta(days=365)
-    
-    # Create the slider with the full date range but defaulting to the last 365 days
-    selected_start_date, selected_end_date = st.slider(
-        "Select Date Range",
-        min_value=daily_min_date,
-        max_value=daily_max_date,
-        value=(default_start_date, daily_max_date),
-        format="YYYY-MM-DD"
-    )
+# Key date anchors
+first_day_this_year = max_date.replace(month=1, day=1)
+first_day_this_month = max_date.replace(day=1)
+
+# Days since start of this year/month
+days_since_year_start = (max_date - first_day_this_year).days
+days_since_month_start = (max_date - first_day_this_month).days
+
+# Previous month range
+last_day_prev_month = first_day_this_month - timedelta(days=1)
+first_day_prev_month = last_day_prev_month.replace(day=1)
+days_in_last_month = (last_day_prev_month - first_day_prev_month).days + 1
+
+# Previous year range
+first_day_prev_year = first_day_this_year.replace(year=max_date.year - 1)
+last_day_prev_year = first_day_prev_year.replace(month=12, day=31)
+days_in_last_year = (last_day_prev_year - first_day_prev_year).days + 1
+
+# Final mapping
+date_mapping = {
+    "1Y": [365, 0],
+    "3M": [90, 0],
+    "1M": [30, 0],
+    "1W": [7, 0],
+    "1D": [1, 0],
+    "YTD": [days_since_year_start, 0],
+    "Last year": [days_in_last_year+days_since_year_start, days_since_year_start + 1],  # +1 to exclude Jan 1
+    "Last month": [days_in_last_month+days_since_month_start, days_since_month_start + 1],  # +1 to exclude 1st of current month
+    "All time": [(max_date - min_date).days, 0]
+}
+
+selected_start_date = max_date - timedelta(days=date_mapping[date_selection][0])
+selected_end_date = max_date - timedelta(days=date_mapping[date_selection][1])
 
 # Filter data by date range
-daily_filtered_df = daily_product_df[(daily_product_df['End Date'] >= selected_start_date) & (daily_product_df['End Date'] <= selected_end_date)].sort_values(by='End Date')
+filtered_df = product_df[(product_df['End Date'] >= selected_start_date) & (product_df['End Date'] <= selected_end_date)].sort_values(by='End Date')
+
+st.subheader(f"{selected_product}")
 
 # Top level metrics
-if not daily_filtered_df.empty:
+if not filtered_df.empty:
 
     # Top current value
-    top_current_value_start = daily_filtered_df.iloc[-2].get('Current Value (€)', 0) if len(daily_filtered_df) > 1 else 0
-    top_current_value_end = daily_filtered_df.iloc[-1].get('Current Value (€)', 0)
+    top_current_value_start = filtered_df.iloc[-2].get('Current Value (€)', 0) if len(filtered_df) > 1 else 0
+    top_current_value_end = filtered_df.iloc[-1].get('Current Value (€)', 0)
     top_current_value_delta = round((top_current_value_end-top_current_value_start), 2)
 
     if top_current_value_start != 0:
@@ -291,8 +320,8 @@ if not daily_filtered_df.empty:
         top_current_value_delta_per = 0
 
     # Top current return
-    top_current_return_start = daily_filtered_df.iloc[-2].get('Current Money Weighted Return (€)', 0) if len(daily_filtered_df) > 1 else 0
-    top_current_return_end = daily_filtered_df.iloc[-1].get('Current Money Weighted Return (€)', 0)
+    top_current_return_start = filtered_df.iloc[-2].get('Current Money Weighted Return (€)', 0) if len(filtered_df) > 1 else 0
+    top_current_return_end = filtered_df.iloc[-1].get('Current Money Weighted Return (€)', 0)
     top_current_return_delta = round((top_current_return_end-top_current_return_start), 2)
 
     if top_current_return_start != 0:
@@ -303,8 +332,8 @@ if not daily_filtered_df.empty:
         top_current_return_delta_per = 0
 
     # Top net return
-    top_net_return_start = daily_filtered_df.iloc[-2].get('Net Return (€)', 0) if len(daily_filtered_df) > 1 else 0
-    top_net_return_end = daily_filtered_df.iloc[-1].get('Net Return (€)', 0)
+    top_net_return_start = filtered_df.iloc[-2].get('Net Return (€)', 0) if len(filtered_df) > 1 else 0
+    top_net_return_end = filtered_df.iloc[-1].get('Net Return (€)', 0)
     top_net_return_delta = round((top_net_return_end-top_net_return_start), 2)
 
     if top_net_return_start != 0:
@@ -325,12 +354,12 @@ if not daily_filtered_df.empty:
     st.divider()
 
 # Plot performance over time
-if not daily_filtered_df.empty:
+if not filtered_df.empty:
     st.subheader(f"{selected_metric} for {selected_product}")
 
     # Top metric (selected)
-    top_selected_metric_start = daily_filtered_df.iloc[-2].get(selected_metric, 0) if len(daily_filtered_df) > 1 else 0
-    top_selected_metric_end = daily_filtered_df.iloc[-1].get(selected_metric, 0)
+    top_selected_metric_start = filtered_df.iloc[-2].get(selected_metric, 0) if len(filtered_df) > 1 else 0
+    top_selected_metric_end = filtered_df.iloc[-1].get(selected_metric, 0)
     top_selected_metric_delta = round((top_selected_metric_end-top_selected_metric_start), 2)
 
     if top_selected_metric_start != 0:
@@ -343,7 +372,7 @@ if not daily_filtered_df.empty:
     # Top net return YTD
 
     # Get last year rows (for returns/cost at the very end of last year)
-    last_year_rows = daily_product_df[daily_product_df['End Date'].dt.year == (datetime.now().year-1)].sort_values(by='End Date')
+    last_year_rows = product_df[product_df['End Date'].dt.year == (datetime.now().year-1)].sort_values(by='End Date')
 
     top_net_return_ytd_start = (
         last_year_rows.iloc[-1].get('Net Return (€)', 0) if not last_year_rows.empty
@@ -392,35 +421,35 @@ if not daily_filtered_df.empty:
         st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=False, width="content")
 
     # Plot
-    daily_fig = px.line()
+    fig = px.line()
 
     # Add the first trace (main product) using add_scatter
-    daily_fig.add_scatter(x=daily_filtered_df['End Date'], 
-                        y=daily_filtered_df[selected_metric], 
+    fig.add_scatter(x=filtered_df['End Date'], 
+                        y=filtered_df[selected_metric], 
                         mode='lines', 
                         name=f"{selected_product}", 
                         line=dict(color="#1f77b4", shape='spline', smoothing=0.7))
     
-    daily_fig.update_layout(width=1200, height=400, margin=dict(l=0, r=0, t=50, b=50),)
+    fig.update_layout(width=1200, height=400, margin=dict(l=0, r=0, t=50, b=50),)
 
     # Add comparison line if another product is selected
-    if not daily_compare_product_df.empty:
-        daily_compare_filtered_df = daily_compare_product_df[(daily_compare_product_df['End Date'] >= selected_start_date) & (daily_compare_product_df['End Date'] <= selected_end_date)].sort_values(by='End Date')
-        daily_fig.add_scatter(x=daily_compare_filtered_df['End Date'], 
-                        y=daily_compare_filtered_df[selected_metric], 
+    if not compare_product_df.empty:
+        compare_filtered_df = compare_product_df[(compare_product_df['End Date'] >= selected_start_date) & (compare_product_df['End Date'] <= selected_end_date)].sort_values(by='End Date')
+        fig.add_scatter(x=compare_filtered_df['End Date'], 
+                        y=compare_filtered_df[selected_metric], 
                         mode='lines', 
                         name=f"{selected_compare_product}", 
                         line=dict(color='orange', shape='spline', smoothing=0.7))
 
         # Set legend visible if two lines are plotted
-        daily_fig.update_layout(showlegend=True, legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", yanchor="bottom"))
+        fig.update_layout(showlegend=True, legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", yanchor="bottom"))
 
-    st.plotly_chart(daily_fig, use_container_width=False)
+    st.plotly_chart(fig, use_container_width=False)
 else:
     st.write("No data available for the selected product and date range.")
 
 with st.expander("Data", expanded=False):
-    st.write(daily_filtered_df.drop(columns=['Start Date']))
+    st.write(filtered_df.drop(columns=['Start Date']))
 
 # File upload
 with st.sidebar:
