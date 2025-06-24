@@ -47,12 +47,10 @@ def db_refresh():
 
         # Parquet file paths
         daily_parquet = 'output/portfolio_performance_daily.parquet'
-        monthly_parquet = 'output/portfolio_performance_monthly.parquet'
         stock_prices_parquet = 'output/stock_prices.parquet'
 
         # Process each table
         process_data(db, 'portfolio_performance_daily', daily_parquet)
-        process_data(db, 'portfolio_performance_monthly', monthly_parquet)
         process_data(db, 'stock_prices', stock_prices_parquet)
 
         app_logger.info("[DB-REFRESH] Database refresh process completed successfully.")
