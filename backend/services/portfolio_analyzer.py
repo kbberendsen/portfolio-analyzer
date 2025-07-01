@@ -56,11 +56,15 @@ class PortfolioAnalyzer:
             print("Downloaded fx rates data is empty.")
             return {}
 
+        try:
         # If data has MultiIndex columns (which happens when only one ticker is used)
-        if isinstance(data.columns, pd.MultiIndex):
-            close_series = data["Close"][ticker]  # Extract the actual Series
-        else:
-            close_series = data["Close"]  # Just in case it's flat
+            if isinstance(data.columns, pd.MultiIndex):
+                close_series = data["Close"][ticker]  # Extract the actual Series
+            else:
+                close_series = data["Close"]  # Just in case it's flat
+        except:
+            print("Error extracting 'Close' data from downloaded fx rates.")
+            return {}
 
         # Build date string: rate dictionary
         fx_rates = {

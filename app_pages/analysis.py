@@ -3,14 +3,12 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
 import os
+from backend.utils.data_loader import load_portfolio_performance_from_api
 
 # Set the page title
 st.set_page_config(page_title="Portfolio Analysis", page_icon="📊", layout="wide")
 
 st.title("Portfolio Analysis")
-
-# Load portfolio data
-portfolio_file = os.path.join('output', 'portfolio_performance_daily.parquet')
 
 # Dictionary to rename the performance metrics columns for display purposes
 rename_dict = {
@@ -29,14 +27,12 @@ rename_dict = {
     'net_performance_percentage': 'Net Performance (%)'
 }
 
-if os.path.exists(portfolio_file):
-    # Load monthly and daily data
-    df = pd.read_parquet(portfolio_file)
-    
+# Load portfolio data
+df = load_portfolio_performance_from_api()
+if not df.empty:
     # Rename columns
     df = df.rename(columns=rename_dict)
 
-    df['End Date'] = df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
     df = df.sort_values(by='End Date', ascending=True)
 
     # Remove 'Full Portfolio' entry
@@ -46,8 +42,8 @@ if os.path.exists(portfolio_file):
     default_selected_date = df['End Date'].max()
     
     # Date selection
-    selected_date = st.date_input("Select End Date", default_selected_date, min_value=df["End Date"].min(), max_value=df["End Date"].max(), width=250)
-    selected_date = pd.to_datetime(selected_date)
+    selected_date_input = st.date_input("Select End Date", default_selected_date, min_value=df["End Date"].min(), max_value=df["End Date"].max(), width=250)
+    selected_date = pd.to_datetime(selected_date_input)
     
     holdings_option = st.segmented_control(
         "Holdings to include",

@@ -4,11 +4,24 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import os
 import requests
+import time
 from backend.utils.api import post_api_request
+from backend.utils.data_loader import load_portfolio_performance_from_api
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
+
+def check_db_health():
+    try:
+        response = requests.get(f"{API_BASE_URL}/debug/health/db", timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "ok":
+                return True, None
+        return False, f"Unexpected response: {response.status_code} - {response.text}"
+    except Exception as e:
+        return False, str(e)
 
 def is_backend_alive():
     try:
@@ -17,29 +30,22 @@ def is_backend_alive():
     except requests.exceptions.RequestException:
         return False
     
-def cached_files_exist():
-    cached_files = [
-        os.path.join('output', 'portfolio_performance_daily.parquet'),
-        os.path.join('output', 'stock_prices.parquet')
-    ]
-    return all(os.path.exists(f) for f in cached_files)
+def delete_data():
+    return post_api_request(
+        f"{API_BASE_URL}/debug/delete-data"
+    )
 
 # Backend triggers
 def trigger_portfolio_calculation():
-    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return post_api_request(
-        f"{API_BASE_URL}/portfolio/calculate"
+        f"{API_BASE_URL}/portfolio/refresh",
+        success_message="Portfolio refresh started in the background."
     )
 
-def trigger_db_refresh():
+def trigger_db_sync():
     return post_api_request(
-        f"{API_BASE_URL}/db/refresh",
-        success_message="Database refresh triggered successfully."
-    )
-
-def initial_db_load():
-    return post_api_request(
-        f"{API_BASE_URL}/db/initial-db-load"
+        f"{API_BASE_URL}/db/sync_db",
+        success_message="Database synchronization started in the background."
     )
 
 ############ APP ############
@@ -70,6 +76,13 @@ with st.sidebar.expander("View Logs", expanded=False):
 if not is_backend_alive():
     st.error("Backend API is not reachable. Please ensure the backend is running.")
     st.stop()  # Stop execution if backend is not reachable
+
+is_db_healthy, db_error = check_db_health()
+if not is_db_healthy:
+    st.error("⚠️ Cannot connect to the database. Please check backend and DB status.")
+    if db_error:
+        st.code(db_error, language="text")
+    st.stop()
 
 st.title("Stock Portfolio Dashboard")
 
@@ -137,44 +150,43 @@ def refresh_data(uploaded_file=None):
     
     # Trigger the backend API to refresh data
     try:
-        # Check if initial db load is needed
-        initial_db_load()
         trigger_portfolio_calculation()
-        if st.session_state.startup_refresh:
-            st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-        
     except Exception as e:
         st.error(f"Error occurred while refreshing data: {e}")
-        
-def clear_cache():
-    cache_path_monthly = os.path.join('output', 'portfolio_performance_monthly.parquet')
-    cache_path_daily = os.path.join('output', 'portfolio_performance_daily.parquet')
-    cache_path_stock_prices = os.path.join('output', 'stock_prices.parquet')
-    cached_files = [cache_path_monthly, cache_path_daily, cache_path_stock_prices]
 
-    for file_path in cached_files:
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-            print(f"{file_path} has been deleted.")
-
-    st.info("Cached data cleared. Refreshing data. This will take some time.")
-
-# Startup refresh logic
+# # Startup refresh logic
 if not st.session_state.startup_refresh:
+    try:
+        # Load current portfolio data to check if empty
+        df = load_portfolio_performance_from_api()
 
-    if cached_files_exist():
-        try:
-            response = requests.post(f"{API_BASE_URL}/portfolio/refresh")
-        except Exception as e:
-            st.toast(f"Error starting background refresh: {e}")
+        if df.empty:
+            with st.spinner("Initial load in progress, please wait..."):
+                # Call blocking portfolio calculation to generate initial data
+                response = requests.post(f"{API_BASE_URL}/portfolio/calculate", timeout=300)
+                response.raise_for_status()
+                # Reload data after initial calculation
+                load_portfolio_performance_from_api.clear()
+                df = load_portfolio_performance_from_api()
+                if df.empty:
+                    st.error("Failed to load portfolio data after initial calculation.")
+                    st.stop()
+        else:
+            # If data exists, optionally trigger background refresh
+            status_resp = requests.get(f"{API_BASE_URL}/portfolio/refresh/status", timeout=5)
+            status_info = status_resp.json()
+            if status_info.get("status") != "running":
+                refresh_resp = requests.post(f"{API_BASE_URL}/portfolio/refresh", timeout=10)
+                if refresh_resp.status_code == 409:
+                    st.toast("Portfolio refresh already in progress.")
+                elif refresh_resp.status_code != 200:
+                    st.warning(f"Unexpected response from refresh endpoint: {refresh_resp.status_code}")
 
-        st.session_state.startup_refresh = True
+    except Exception as e:
+        st.toast(f"Error during startup refresh logic: {e}")
+        st.stop()
 
-    else:
-        # No cached files -> Run blocking calculation synchronously
-        with st.spinner("No cached data found. Running initial portfolio calculation..."):
-            refresh_data()
-            st.session_state.startup_refresh = True
+    st.session_state.startup_refresh = True
 
 # Clear the placeholder once the data is ready
 loading_placeholder.empty()
@@ -199,33 +211,25 @@ rename_dict = {
 
 try:
     # Load daily data
-    df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
+    df = load_portfolio_performance_from_api()
 
     # If df is empty
     if df.empty:
-        if st.button('Force refresh', type="primary"):
-            trigger_portfolio_calculation()
-            st.session_state.startup_refresh = False
-            st.rerun()
+        st.info("No portfolio data found. Please upload a transaction file and refresh the data.")
+        st.stop()
 
-except:
+except Exception as e:
     st.warning(f"Failed loading data. Are the stock tickers mapped correctly? Check GitHub project documention for instructions.")
     st.page_link("app_pages/ticker_mapping.py", label="Click here to check ticker mapping", icon="ℹ️")
     st.markdown(
         "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
     )
-    if st.button('Clear Cached Data', type="primary"):
-        clear_cache()
-        st.session_state.startup_refresh = False
-        st.rerun()
+
+    st.error({e})
     st.stop()
 
 # Rename columns
 df = df.rename(columns=rename_dict)
-
-# Convert dates to datetime format
-df['Start Date'] = pd.to_datetime(df['Start Date'])
-df['End Date'] = pd.to_datetime(df['End Date'])
 
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:
@@ -254,8 +258,8 @@ compare_product_df = df[df['Product'] == selected_compare_product] if selected_c
 
 # DATE  FILTER    
 # Set the full date range as min and max values for the slider
-max_date = df['End Date'].max().to_pydatetime()
-min_date = df['End Date'].min().to_pydatetime()
+max_date = df['End Date'].max()
+min_date = df['End Date'].min()
 
 # Date selection
 date_selection = st.segmented_control(
@@ -460,23 +464,20 @@ with st.sidebar:
     if st.button('Refresh Data'):
         st.session_state.startup_refresh = False
         refresh_data(uploaded_file)
+        time.sleep(1)
         st.rerun()
 
     # Refresh Button to refresh database if env variable is set to true
     if os.getenv("USE_SUPABASE", "true").lower() == "true":
-        if st.button('Refresh Database'):
-            st.info("Upserting cached data to database and refreshing locally cached data. This will take some time.")
-            # Run db_refresh (API) to update the CSV
-            try:
-                trigger_db_refresh()
-                if st.session_state.startup_refresh:
-                    st.success(f"Database refreshed successfully! (Last refresh: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-            except Exception as e:
-                st.error(f"Error occurred while refreshing database: {e}")
-            st.session_state.startup_refresh = False
-            st.rerun()
+        if st.button('Sync with Database'):
+            # The trigger_db_sync function calls the API and handles showing
+            # a success, warning, or error message.
+            if trigger_db_sync():
+                time.sleep(2)
+                st.rerun()
     
-    if st.button('Clear Cached Data', type="primary"):
-        clear_cache()
-        st.session_state.startup_refresh = False
-        st.rerun()
+    with st.expander("Delete Data", expanded=False):
+        st.warning("This will delete all data from the database. Initial load will be required after this action.")
+        if st.button('Delete Data', type="primary"):
+            delete_data()
+            st.rerun()

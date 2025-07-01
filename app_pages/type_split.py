@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import os
 import json
+from backend.utils.data_loader import load_portfolio_performance_from_api
 
 # Set the page title
 st.set_page_config(page_title="Portfolio Analysis - Split", page_icon="📊", layout="centered")
@@ -11,7 +12,6 @@ st.set_page_config(page_title="Portfolio Analysis - Split", page_icon="📊", la
 st.title("Portfolio Analysis - Split")
 
 # Load portfolio data
-portfolio_file = os.path.join('output', 'portfolio_performance_daily.parquet')
 mapping_path = os.path.join('output', 'isin_mapping.json')
 
 # Dictionary to rename the performance metrics columns for display purposes
@@ -32,14 +32,12 @@ rename_dict = {
     'net_performance_percentage': 'Net Performance (%)'
 }
 
-if os.path.exists(portfolio_file):
-    # Load monthly and daily data
-    df = pd.read_parquet(portfolio_file)
-    
+# Load portfolio data
+df = load_portfolio_performance_from_api()
+if not df.empty:
     # Rename columns
     df = df.rename(columns=rename_dict)
 
-    df['End Date'] = df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
     df = df.sort_values(by='End Date', ascending=True)
 
     # Remove 'Full Portfolio' entry
@@ -64,8 +62,8 @@ if os.path.exists(portfolio_file):
 
     # DATE  FILTER    
     # Set the full date range as min and max values for the slider
-    max_date = df['End Date'].max().to_pydatetime()
-    min_date = df['End Date'].min().to_pydatetime()
+    max_date = df['End Date'].max()
+    min_date = df['End Date'].min()
 
     # Date selection
     date_selection = st.segmented_control(

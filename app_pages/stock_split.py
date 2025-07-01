@@ -4,6 +4,7 @@ import os
 import yfinance as yf
 from datetime import datetime
 from backend.utils.api import post_api_request
+from backend.utils.data_loader import load_portfolio_performance_from_api
 
 # Config
 st.set_page_config(page_title="Stock Split Calculator", page_icon=":bar_chart:", layout="centered")
@@ -11,10 +12,9 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environm
 
 # Backend triggers
 def trigger_portfolio_calculation():
-    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return post_api_request(
-        f"{API_BASE_URL}/portfolio/calculate",
-        success_message=f"Portfolio calculation triggered! (Last update: {ts})"
+        f"{API_BASE_URL}/portfolio/refresh",
+        success_message="Portfolio refresh started in the background."
     )
 
 st.title('Stock Split Calculator')
@@ -69,10 +69,10 @@ rename_dict = {
 }
 
 # Load portfolio data
-portfolio_file = os.path.join('output', 'portfolio_performance_daily.parquet')
-if os.path.exists(portfolio_file):
+df = load_portfolio_performance_from_api()
+if not df.empty:
     # Load daily data
-    daily_df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
+    daily_df = df
     daily_df = daily_df.rename(columns=rename_dict)
 
     # Get the most recent data

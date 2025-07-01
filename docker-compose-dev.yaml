@@ -6,14 +6,28 @@ services:
     ports:
       - "8501:8501"     # Streamlit (public)
     expose:
-      - "8000"          # FastAPI (internal only)
+      - "8000"          # FastAPI (internal only within Docker network)
     volumes:
       - ./output:/app/output
       - ./uploads:/app/uploads
       - ./logs:/app/logs
-    environment:
-      - USE_SUPABASE=${USE_SUPABASE:-false}
-      - SUPABASE_URL=${SUPABASE_URL:-http://placeholder-supabase-url.com}
-      - SUPABASE_KEY=${SUPABASE_KEY:-placeholder-supabase-key}
-      - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
+      - ./app_pages:/app/app_pages
+      - ./backend:/app/backend
+    env_file:
+      - .env
+    depends_on:
+      - postgres
     restart: unless-stopped
+    command: sh -c "uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload & streamlit run app.py --server.port=8501 --server.address=0.0.0.0"
+
+  postgres:
+    image: postgres:16
+    container_name: portfolio-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
