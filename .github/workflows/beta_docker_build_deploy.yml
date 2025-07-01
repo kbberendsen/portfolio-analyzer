@@ -45,7 +45,9 @@ jobs:
 
             echo "${{ secrets.GENERAL_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            cd ~/projects/portfolio-analyzer
+            cd ~/projects/portfolio-analyzer-beta
+
+            curl -o docker-compose.beta.yaml https://raw.githubusercontent.com/kbberendsen/portfolio-analyzer/beta/docker-compose.beta.yaml
 
             docker pull ghcr.io/kbberendsen/portfolio-analyzer:beta
 
