@@ -8,6 +8,9 @@ import time
 from backend.utils.api import post_api_request
 from backend.utils.data_loader import load_portfolio_performance_from_api
 
+# Auth
+#st.login()
+
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
@@ -171,16 +174,6 @@ if not st.session_state.startup_refresh:
                 if df.empty:
                     st.error("Failed to load portfolio data after initial calculation.")
                     st.stop()
-        else:
-            # If data exists, optionally trigger background refresh
-            status_resp = requests.get(f"{API_BASE_URL}/portfolio/refresh/status", timeout=5)
-            status_info = status_resp.json()
-            if status_info.get("status") != "running":
-                refresh_resp = requests.post(f"{API_BASE_URL}/portfolio/refresh", timeout=10)
-                if refresh_resp.status_code == 409:
-                    st.toast("Portfolio refresh already in progress.")
-                elif refresh_resp.status_code != 200:
-                    st.warning(f"Unexpected response from refresh endpoint: {refresh_resp.status_code}")
 
     except Exception as e:
         st.toast(f"Error during startup refresh logic: {e}")
@@ -481,3 +474,17 @@ with st.sidebar:
         if st.button('Delete Data', type="primary"):
             delete_data()
             st.rerun()
+
+# Background refresh logic
+if st.session_state.startup_refresh:
+    try:
+        status_resp = requests.get(f"{API_BASE_URL}/portfolio/refresh/status", timeout=5)
+        status_info = status_resp.json()
+        if status_info.get("status") != "running":
+            refresh_resp = requests.post(f"{API_BASE_URL}/portfolio/refresh", timeout=10)
+            if refresh_resp.status_code == 409:
+                st.toast("Portfolio refresh already in progress.")
+            elif refresh_resp.status_code != 200:
+                st.warning(f"Unexpected response from refresh endpoint: {refresh_resp.status_code}")
+    except Exception as e:
+        st.toast(f"Error triggering background refresh: {e}")
