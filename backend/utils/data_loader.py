@@ -5,7 +5,7 @@ import os
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
-@st.cache_data(ttl=300, show_spinner="Loading data...") # Cache for 300 seconds to avoid re-fetching on every script rerun
+@st.cache_data(ttl=60, show_spinner="Loading data...") # Cache for 60 seconds to avoid re-fetching on every script rerun
 def load_portfolio_performance_from_api() -> pd.DataFrame:
     """
     Fetches portfolio performance data from the backend API.
