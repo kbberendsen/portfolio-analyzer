@@ -3,7 +3,8 @@ import numpy as np
 from supabase import create_client, Client
 import os
 import time
-import datetime
+import decimal
+from datetime import date, datetime
 from backend.utils.logger import app_logger
 
 class DB_Supabase:
@@ -47,10 +48,19 @@ class DB_Supabase:
             app_logger.info(f"[DB-SYNC] Skipping upsert: DataFrame for '{table_name}' is empty.")
             return None
         
-        # Convert date columns to ISO format strings for Supabase
-        for col in df.select_dtypes(include=["datetime64[ns]", "datetime64[ns, UTC]", "object"]):
-            if pd.api.types.is_datetime64_any_dtype(df[col]) or df[col].apply(lambda x: isinstance(x, (pd.Timestamp, np.datetime64, datetime.date))).any():
+        df = df.copy()
+
+        # Convert datetime and date columns to ISO format
+        for col in df.columns:
+            if pd.api.types.is_datetime64_any_dtype(df[col]):
                 df[col] = df[col].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
+            elif df[col].apply(lambda x: isinstance(x, (date, datetime))).any():
+                df[col] = df[col].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
+
+        # Convert Decimal columns to float
+        for col in df.columns:
+            if df[col].apply(lambda x: isinstance(x, decimal.Decimal)).any():
+                df[col] = df[col].apply(lambda x: float(x) if pd.notnull(x) else None)
 
         data = df.to_dict(orient='records')
 
