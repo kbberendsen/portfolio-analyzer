@@ -3,6 +3,7 @@ import numpy as np
 from supabase import create_client, Client
 import os
 import time
+import datetime
 from backend.utils.logger import app_logger
 
 class DB_Supabase:
@@ -45,6 +46,11 @@ class DB_Supabase:
         if df.empty:
             app_logger.info(f"[DB-SYNC] Skipping upsert: DataFrame for '{table_name}' is empty.")
             return None
+        
+        # Convert date columns to ISO format strings for Supabase
+        for col in df.select_dtypes(include=["datetime64[ns]", "datetime64[ns, UTC]", "object"]):
+            if pd.api.types.is_datetime64_any_dtype(df[col]) or df[col].apply(lambda x: isinstance(x, (pd.Timestamp, np.datetime64, datetime.date))).any():
+                df[col] = df[col].apply(lambda x: x.isoformat() if pd.notnull(x) else None)
 
         data = df.to_dict(orient='records')
 
