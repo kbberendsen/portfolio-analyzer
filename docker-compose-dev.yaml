@@ -13,6 +13,7 @@ services:
       - ./logs:/app/logs
       - ./app_pages:/app/app_pages
       - ./backend:/app/backend
+      - ./.streamlit:/app/.streamlit:ro
     env_file:
       - .env
     depends_on:

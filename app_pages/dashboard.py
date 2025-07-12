@@ -6,7 +6,7 @@ import os
 import requests
 import time
 from backend.utils.api import post_api_request
-from backend.utils.data_loader import load_portfolio_performance_from_api
+from backend.utils.data_loader import load_portfolio_performance_from_api, get_portfolio_metadata
 
 # Auth
 if not st.user.is_logged_in:
@@ -58,11 +58,11 @@ def trigger_db_sync():
 ############ APP ############
 
 with st.sidebar:
-    st.markdown(f"Welcome {st.user.name}!")
-    st.markdown(f"Welcome {st.user.sub}!")
     # Log out button
     if st.button("Log out", type="primary"):
             st.logout()
+    st.markdown(f"Welcome {st.user.name}!")
+    #st.markdown(f"Welcome {st.user.sub}!")
 
 LOG_DIR = "logs"
 
@@ -171,23 +171,26 @@ def refresh_data(uploaded_file=None):
 # # Startup refresh logic
 if not st.session_state.startup_refresh:
     try:
-        # Load current portfolio data to check if empty
-        df = load_portfolio_performance_from_api()
+        # Load metadata to check if it's the first run
+        metadata = get_portfolio_metadata()
 
-        if df.empty:
+        if not metadata or not metadata.get("products"):
             with st.spinner("Initial load in progress, please wait..."):
                 # Call blocking portfolio calculation to generate initial data
                 response = requests.post(f"{API_BASE_URL}/portfolio/calculate", timeout=300)
                 response.raise_for_status()
-                # Reload data after initial calculation
+                # Clear caches and reload metadata after initial calculation
+                get_portfolio_metadata.clear()
                 load_portfolio_performance_from_api.clear()
-                df = load_portfolio_performance_from_api()
-                if df.empty:
+                metadata = get_portfolio_metadata()
+                if not metadata or not metadata.get("products"):
                     st.error("Failed to load portfolio data after initial calculation.")
                     st.stop()
 
     except Exception as e:
         st.toast(f"Error during startup refresh logic: {e}")
+        # Attempt to show the ticker mapping page if there's an issue
+        st.page_link("app_pages/ticker_mapping.py", label="Click here to check ticker mapping", icon="ℹ️")
         st.stop()
 
     st.session_state.startup_refresh = True
@@ -214,37 +217,25 @@ rename_dict = {
 }
 
 try:
-    # Load daily data
-    df = load_portfolio_performance_from_api()
-
-    # If df is empty
-    if df.empty:
+    # Load metadata for filters
+    metadata = get_portfolio_metadata()
+    if not metadata or not metadata.get("products"):
         st.info("No portfolio data found. Please upload a transaction file and refresh the data.")
         st.stop()
-
 except Exception as e:
-    st.warning(f"Failed loading data. Are the stock tickers mapped correctly? Check GitHub project documention for instructions.")
-    st.page_link("app_pages/ticker_mapping.py", label="Click here to check ticker mapping", icon="ℹ️")
-    st.markdown(
-        "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
-    )
-
-    st.error({e})
+    st.error(f"Failed to load portfolio metadata: {e}")
     st.stop()
-
-# Rename columns
-df = df.rename(columns=rename_dict)
 
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:
     # Sort product options
-    product_options = sorted(df['Product'].unique().tolist())
+    product_options = sorted(metadata.get("products", []))
     if "Full portfolio" in product_options:
         product_options.remove("Full portfolio")
         product_options.insert(0, "Full portfolio")
 
     # Set default index for "Full Portfolio"
-    default_index = product_options.index("Full portfolio")
+    default_index = product_options.index("Full portfolio") if "Full portfolio" in product_options else 0
     selected_product = st.selectbox("Select a Product", options=product_options, index=default_index, key="product_select")
 
     # Dropdown to select another product for comparison
@@ -252,9 +243,31 @@ with st.sidebar:
     selected_compare_product = st.selectbox("Compare with another Product", options=compare_product_options, index=0, key="compare_product_select")
 
     # Performance metrics
-    performance_metrics = [col for col in df.columns if col not in ['Product', 'Ticker', 'Start Date', 'End Date']]
-    default_index_per = performance_metrics.index("Net Performance (%)")
+    # Define metrics from the rename_dict to avoid needing the full dataframe upfront
+    non_metric_cols = ['Product', 'Ticker', 'Start Date', 'End Date']
+    performance_metrics = sorted([v for k, v in rename_dict.items() if v not in non_metric_cols])
+    default_index_per = performance_metrics.index("Net Performance (%)") if "Net Performance (%)" in performance_metrics else 0
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select")
+
+# Prepare list of products to fetch data for
+products_to_fetch = [selected_product]
+if selected_compare_product != "None":
+    products_to_fetch.append(selected_compare_product)
+
+try:
+    # Load only the data for the selected products
+    df = load_portfolio_performance_from_api(products=products_to_fetch)
+
+    if df.empty:
+        st.info(f"No data found for product(s): {', '.join(products_to_fetch)}")
+        st.stop()
+
+    # Rename columns for display
+    df = df.rename(columns=rename_dict)
+
+except Exception as e:
+    st.error(f"Failed to load performance data: {e}")
+    st.stop()
 
 # Filter on product
 product_df = df[df['Product'] == selected_product]
@@ -262,8 +275,7 @@ compare_product_df = df[df['Product'] == selected_compare_product] if selected_c
 
 # DATE  FILTER    
 # Set the full date range as min and max values for the slider
-max_date = df['End Date'].max()
-min_date = df['End Date'].min()
+max_date, min_date = metadata.get("max_date"), metadata.get("min_date")
 
 # Date selection
 date_selection = st.segmented_control(
@@ -485,8 +497,8 @@ with st.sidebar:
             delete_data()
             st.rerun()
 
-# Background refresh logic
-if st.session_state.startup_refresh:
+# Background refresh logic (runs once per session after startup)
+if st.session_state.startup_refresh and "background_refresh_triggered" not in st.session_state:
     try:
         status_resp = requests.get(f"{API_BASE_URL}/portfolio/refresh/status", timeout=5)
         status_info = status_resp.json()
@@ -496,5 +508,9 @@ if st.session_state.startup_refresh:
                 st.toast("Portfolio refresh already in progress.")
             elif refresh_resp.status_code != 200:
                 st.warning(f"Unexpected response from refresh endpoint: {refresh_resp.status_code}")
+        else:
+            st.toast("Portfolio refresh already in progress.")
+        st.session_state.background_refresh_triggered = True
     except Exception as e:
         st.toast(f"Error triggering background refresh: {e}")
+        st.session_state.background_refresh_triggered = True

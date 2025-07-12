@@ -10,7 +10,7 @@ services:
       - ./output:/app/output
       - ./uploads:/app/uploads
       - ./logs:/app/logs
-      - ./secrets.toml:/app/.streamlit/secrets.toml:ro
+      - ./.streamlit:/app/.streamlit:ro
     env_file:
       - .env
     depends_on:
