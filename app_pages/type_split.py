@@ -6,6 +6,13 @@ import os
 import json
 from backend.utils.data_loader import load_portfolio_performance_from_api
 
+# Auth
+if not st.user.is_logged_in:
+    st.warning("You must log in to use this app.")
+    if st.button("Log in"):
+        st.login("auth0")
+    st.stop()
+
 # Set the page title
 st.set_page_config(page_title="Portfolio Analysis - Split", page_icon="📊", layout="centered")
 

@@ -9,7 +9,11 @@ from backend.utils.api import post_api_request
 from backend.utils.data_loader import load_portfolio_performance_from_api
 
 # Auth
-#st.login()
+if not st.user.is_logged_in:
+    st.warning("You must log in to use this app.")
+    if st.button("Log in"):
+        st.login("auth0")
+    st.stop()
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
@@ -52,6 +56,13 @@ def trigger_db_sync():
     )
 
 ############ APP ############
+
+with st.sidebar:
+    st.markdown(f"Welcome {st.user.name}!")
+    st.markdown(f"Welcome {st.user.sub}!")
+    # Log out button
+    if st.button("Log out", type="primary"):
+            st.logout()
 
 LOG_DIR = "logs"
 
@@ -448,7 +459,6 @@ else:
 with st.expander("Data", expanded=False):
     st.write(filtered_df.drop(columns=['Start Date']))
 
-# File upload
 with st.sidebar:
     # File uploader for the user to upload a new CSV file
     uploaded_file = st.file_uploader("Upload New Transactions CSV", type=["csv"])

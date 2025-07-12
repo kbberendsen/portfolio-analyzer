@@ -6,6 +6,13 @@ from datetime import datetime
 from backend.utils.api import post_api_request
 from backend.utils.data_loader import load_portfolio_performance_from_api
 
+# Auth
+if not st.user.is_logged_in:
+    st.warning("You must log in to use this app.")
+    if st.button("Log in"):
+        st.login("auth0")
+    st.stop()
+
 # Config
 st.set_page_config(page_title="Stock Split Calculator", page_icon=":bar_chart:", layout="centered")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
