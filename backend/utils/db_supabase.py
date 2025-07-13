@@ -32,8 +32,8 @@ class DB_Supabase:
         """Returns the number of rows in the given table."""
         def operation():
             response = self.supabase.table(table_name).select("count").single().execute()
-            if response.error:
-                app_logger.error(f"[DB-SYNC] Error getting row count for '{table_name}': {response.error}")
+            if response.status_code != 200:
+                app_logger.error(f"[DB-SYNC] Error getting row count for '{table_name}': Status {response.status_code}")
                 return 0
             return response.data.get('count', 0) if response.data else 0
 
@@ -67,8 +67,9 @@ class DB_Supabase:
         def operation():
             response = self.supabase.table(table_name).upsert(data).execute()
 
-            if response.error:
-                app_logger.error(f"[DB-SYNC] Upsert to '{table_name}' failed: {response.error}")
+            if response.status_code != 200:
+                app_logger.error(f"[DB-SYNC] Upsert to '{table_name}' failed: Status {response.status_code}")
+                return 0
             else:
                 app_logger.info(f"[DB-SYNC] Successfully upserted {len(data)} rows to '{table_name}'.")
             return response
@@ -90,8 +91,10 @@ class DB_Supabase:
 
         def operation():
             response = self.supabase.table(table_name).upsert(data).execute()
-            if response.error:
-                app_logger.error(f"[DB-SYNC] Stock price upsert failed: {response.error}")
+
+            if response.status_code != 200:
+                app_logger.error(f"[DB-SYNC] Stock price upsert failed: Status {response.status_code}")
+                return 0
             else:
                 app_logger.info(f"[DB-SYNC] Successfully upserted {len(data)} rows to '{table_name}'.")
             return response
@@ -107,9 +110,11 @@ class DB_Supabase:
         def operation():
             nonlocal offset
             response = self.supabase.table(table_name).select('*').range(offset, offset + page_size - 1).execute()
-            if response.error:
-                app_logger.error(f"[DB-SYNC] Error fetching rows from '{table_name}': {response.error}")
-                return None
+
+            if response.status_code != 200:
+                app_logger.error(f"[DB-SYNC] Error fetching rows from '{table_name}': Status {response.status_code}")
+                return 0
+            
             if response.data:
                 all_rows.extend(response.data)
                 offset += page_size
