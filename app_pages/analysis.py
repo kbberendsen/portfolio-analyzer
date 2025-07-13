@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
 import os
-from backend.utils.data_loader import load_portfolio_performance_from_api
+from backend.streamlit_utils.data_loader import get_portfolio_performance_daily
 
 # Auth
 if not st.user.is_logged_in:
@@ -35,7 +35,7 @@ rename_dict = {
 }
 
 # Load portfolio data
-df = load_portfolio_performance_from_api()
+df = get_portfolio_performance_daily()
 if not df.empty:
     # Rename columns
     df = df.rename(columns=rename_dict)

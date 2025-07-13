@@ -4,6 +4,10 @@ import os
 import json
 import requests
 import time
+from backend.streamlit_utils.constants import (
+    API_BASE_URL,
+    ENV_API_BASE_URL_KEY
+)
 
 # Auth
 if not st.user.is_logged_in:
@@ -16,7 +20,7 @@ if not st.user.is_logged_in:
 st.set_page_config(page_title="Ticker Mapping", page_icon="📊", layout="wide")
 st.title("Ticker Mapping")
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
+API_BASE_URL = os.getenv(ENV_API_BASE_URL_KEY, API_BASE_URL)
 
 # Call transactions processing (API)
 try:

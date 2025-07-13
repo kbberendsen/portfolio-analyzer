@@ -2,9 +2,13 @@ import streamlit as st
 import pandas as pd
 import os
 import yfinance as yf
-from datetime import datetime
-from backend.utils.api import post_api_request
-from backend.utils.data_loader import load_portfolio_performance_from_api
+from backend.streamlit_utils.api import post_api_request
+from backend.streamlit_utils.data_loader import get_portfolio_performance_daily
+from backend.streamlit_utils.constants import (
+    API_BASE_URL,
+    ENV_API_BASE_URL_KEY,
+    PERFORMANCE_METRIC_RENAME
+)
 
 # Auth
 if not st.user.is_logged_in:
@@ -15,7 +19,7 @@ if not st.user.is_logged_in:
 
 # Config
 st.set_page_config(page_title="Stock Split Calculator", page_icon=":bar_chart:", layout="centered")
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
+API_BASE_URL = os.getenv(ENV_API_BASE_URL_KEY, API_BASE_URL)
 
 # Backend triggers
 def trigger_portfolio_calculation():
@@ -57,30 +61,12 @@ def get_current_stock_price(ticker_symbol):
     else:
         return None
 
-# Dictionary to rename the performance metrics columns for display purposes
-rename_dict = {
-    'product': 'Product',
-    'ticker': 'Ticker',
-    'quantity': 'Quantity',
-    'start_date': 'Start Date',
-    'end_date': 'End Date',
-    'avg_cost': 'Average Cost (€)',
-    'total_cost': 'Total Cost (€)',
-    'transaction_costs': 'Transaction Costs (€)',
-    'current_value': 'Current Value (€)',
-    'current_money_weighted_return': 'Current Money Weighted Return (€)',
-    'realized_return': 'Realized Return (€)',
-    'net_return': 'Net Return (€)',
-    'current_performance_percentage': 'Current Performance (%)',
-    'net_performance_percentage': 'Net Performance (%)'
-}
-
 # Load portfolio data
-df = load_portfolio_performance_from_api()
+df = get_portfolio_performance_daily()
 if not df.empty:
     # Load daily data
     daily_df = df
-    daily_df = daily_df.rename(columns=rename_dict)
+    daily_df = daily_df.rename(columns=PERFORMANCE_METRIC_RENAME)
 
     # Get the most recent data
     daily_df_recent_date = sorted(daily_df['End Date'].unique())[-1]

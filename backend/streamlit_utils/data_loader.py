@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
 @st.cache_data(ttl=60, show_spinner="Loading data...")
-def load_portfolio_performance_from_api(
+def get_portfolio_performance_daily(
     products: Optional[List[str]] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,

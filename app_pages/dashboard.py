@@ -5,8 +5,23 @@ import plotly.express as px
 import os
 import requests
 import time
-from backend.utils.api import post_api_request
-from backend.utils.data_loader import load_portfolio_performance_from_api, get_portfolio_metadata
+from backend.streamlit_utils.logs import get_log_files, read_last_n_lines_reversed
+from backend.streamlit_utils.data_loader import get_portfolio_performance_daily, get_portfolio_metadata
+from backend.streamlit_utils.api import (
+    trigger_portfolio_calculation,
+    trigger_db_sync,
+    delete_data,
+    is_backend_alive,
+    check_db_health,
+)
+from backend.streamlit_utils.constants import (
+    API_BASE_URL,
+    ENV_API_BASE_URL_KEY,
+    UPLOADS_DIR,
+    TRANSACTIONS_CSV,
+    PERFORMANCE_METRIC_RENAME,
+    DATE_RANGE_OPTIONS
+)
 
 # Auth
 if not st.user.is_logged_in:
@@ -17,64 +32,21 @@ if not st.user.is_logged_in:
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
+API_BASE_URL = os.getenv(ENV_API_BASE_URL_KEY, API_BASE_URL)
 
-def check_db_health():
-    try:
-        response = requests.get(f"{API_BASE_URL}/debug/health/db", timeout=3)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("status") == "ok":
-                return True, None
-        return False, f"Unexpected response: {response.status_code} - {response.text}"
-    except Exception as e:
-        return False, str(e)
-
-def is_backend_alive():
-    try:
-        response = requests.get(API_BASE_URL, timeout=2)
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
-        return False
-    
-def delete_data():
-    return post_api_request(
-        f"{API_BASE_URL}/debug/delete-data"
-    )
-
-# Backend triggers
-def trigger_portfolio_calculation():
-    return post_api_request(
-        f"{API_BASE_URL}/portfolio/refresh",
-        success_message="Portfolio refresh started in the background."
-    )
-
-def trigger_db_sync():
-    return post_api_request(
-        f"{API_BASE_URL}/db/sync_db",
-        success_message="Database synchronization started in the background."
-    )
-
-############ APP ############
+# --------------------
+# APP
+# --------------------
 
 with st.sidebar:
-    # Log out button
     if st.button("Log out", type="primary"):
-            st.logout()
-    st.markdown(f"Welcome {st.user.name}!")
-    #st.markdown(f"Welcome {st.user.sub}!")
+        st.logout()
+        st.stop()
 
-LOG_DIR = "logs"
-
-def get_log_files():
-    if not os.path.exists(LOG_DIR):
-        return []
-    return [f for f in os.listdir(LOG_DIR) if os.path.isfile(os.path.join(LOG_DIR, f))]
-
-def read_last_n_lines_reversed(filename, n=100):
-    with open(os.path.join(LOG_DIR, filename), 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    return "".join(lines[-n:][::-1])
+    # Show welcome message only if logged in
+    if st.user.is_logged_in and hasattr(st.user, "name"):
+        st.markdown(f"Welcome {st.user.name}!")
+        #st.markdown(f"Welcome {st.user.sub}!")
 
 with st.sidebar.expander("View Logs", expanded=False):
     log_files = get_log_files()
@@ -100,12 +72,19 @@ if not is_db_healthy:
 
 st.title("Stock Portfolio Dashboard")
 
-# Transactions file path
+
+# --------------------
+# Transactions File Upload
+# --------------------
+
 # Create uploads directory if it doesn't exist
-os.makedirs("uploads", exist_ok=True)
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 # Check if the uploads folder contains any CSV files
-csv_files = [f for f in os.listdir("uploads") if f.endswith(".csv")]
+csv_files = [f for f in os.listdir(UPLOADS_DIR) if f.endswith(".csv")]
+
+# File path for transactions CSV
+file_path = os.path.join(UPLOADS_DIR, TRANSACTIONS_CSV)
 
 # Check for transaction file in the uploads folder
 if not csv_files:
@@ -117,14 +96,10 @@ if not csv_files:
     uploaded_file = st.file_uploader("Upload your DeGiro transactions CSV file", type=["csv"])
     
     if uploaded_file:
-        os.makedirs("uploads", exist_ok=True)  # Ensure the uploads folder exists
-        file_path = os.path.join('uploads', 'Transactions.csv')
-
         df = pd.read_csv(uploaded_file)
         df.to_csv(file_path, index=False)
         st.success("File uploaded successfully! Please reload the page.")
-    
-    st.stop()  # Stop execution if no data is available
+    st.stop()
 
 # Placeholder for the loading spinner while refreshing data on startup
 loading_placeholder = st.empty()
@@ -181,7 +156,7 @@ if not st.session_state.startup_refresh:
                 response.raise_for_status()
                 # Clear caches and reload metadata after initial calculation
                 get_portfolio_metadata.clear()
-                load_portfolio_performance_from_api.clear()
+                get_portfolio_performance_daily.clear()
                 metadata = get_portfolio_metadata()
                 if not metadata or not metadata.get("products"):
                     st.error("Failed to load portfolio data after initial calculation.")
@@ -197,24 +172,6 @@ if not st.session_state.startup_refresh:
 
 # Clear the placeholder once the data is ready
 loading_placeholder.empty()
-
-# Dictionary to rename the performance metrics columns for display purposes
-rename_dict = {
-    'product': 'Product',
-    'ticker': 'Ticker',
-    'quantity': 'Quantity',
-    'start_date': 'Start Date',
-    'end_date': 'End Date',
-    'avg_cost': 'Average Cost (€)',
-    'total_cost': 'Total Cost (€)',
-    'transaction_costs': 'Transaction Costs (€)',
-    'current_value': 'Current Value (€)',
-    'current_money_weighted_return': 'Current Money Weighted Return (€)',
-    'realized_return': 'Realized Return (€)',
-    'net_return': 'Net Return (€)',
-    'current_performance_percentage': 'Current Performance (%)',
-    'net_performance_percentage': 'Net Performance (%)'
-}
 
 try:
     # Load metadata for filters
@@ -245,7 +202,7 @@ with st.sidebar:
     # Performance metrics
     # Define metrics from the rename_dict to avoid needing the full dataframe upfront
     non_metric_cols = ['Product', 'Ticker', 'Start Date', 'End Date']
-    performance_metrics = sorted([v for k, v in rename_dict.items() if v not in non_metric_cols])
+    performance_metrics = sorted([v for k, v in PERFORMANCE_METRIC_RENAME.items() if v not in non_metric_cols])
     default_index_per = performance_metrics.index("Net Performance (%)") if "Net Performance (%)" in performance_metrics else 0
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select")
 
@@ -256,14 +213,14 @@ if selected_compare_product != "None":
 
 try:
     # Load only the data for the selected products
-    df = load_portfolio_performance_from_api(products=products_to_fetch)
+    df = get_portfolio_performance_daily(products=products_to_fetch)
 
     if df.empty:
         st.info(f"No data found for product(s): {', '.join(products_to_fetch)}")
         st.stop()
 
     # Rename columns for display
-    df = df.rename(columns=rename_dict)
+    df = df.rename(columns=PERFORMANCE_METRIC_RENAME)
 
 except Exception as e:
     st.error(f"Failed to load performance data: {e}")
@@ -280,7 +237,7 @@ max_date, min_date = metadata.get("max_date"), metadata.get("min_date")
 # Date selection
 date_selection = st.segmented_control(
     "Date Range",
-    options=["1Y", "3M", "1M", "1W", "YTD", "Last year", "Last month", "All time"],
+    options=DATE_RANGE_OPTIONS,
     default="1Y",
     selection_mode="single",
 )
