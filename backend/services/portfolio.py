@@ -83,33 +83,6 @@ def calc_portfolio():
                 prices = yf_stock_price_data.get(ticker, {})
                 for date, price in prices.items():
                     prices[date] = price * fx_rate.get(date, 1)
-        
-        # Load existing results from Parquet file
-        # try:
-        #     portfolio_results_df = pd.read_parquet("output/portfolio_performance_daily.parquet")
-        #     app_logger.info("[PORTFOLIO-CALC] Loaded portfolio_performance_daily from Parquet")
-
-        #     # Remove last 2 days to force refresh (get end of day data)
-        #     last_2_days = sorted(portfolio_results_df['end_date'].unique())[-2:]
-        #     portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
-
-        # except Exception as e:
-        #     app_logger.warning(f"[PORTFOLIO-CALC] Failed to load portfolio_performance_daily from Parquet: {e}")
-        #     portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
-        #                                                     'avg_cost', 'total_cost', 'transaction_costs', 'current_value', 
-        #                                                     'current_money_weighted_return', 'realized_return', 
-        #                                                     'net_return', 'current_performance_percentage', 
-        #                                                     'net_performance_percentage'])
-        
-        # # Load stock prices from Parquet file
-        # try:
-        #     stock_prices_df = pd.read_parquet('output/stock_prices.parquet')
-        #     stock_prices_df = stock_prices_df.dropna(subset=['price'])
-        #     stock_prices_dict = stock_prices_df.groupby('ticker').apply(lambda x: x.set_index('date')['price'].to_dict()).to_dict()
-        #     app_logger.info("[PORTFOLIO-CALC] Loaded stock_prices from Parquet")
-        # except Exception as e:
-        #     app_logger.warning(f"[PORTFOLIO-CALC] Failed to load stock_prices from Parquet: {e}")
-        #     stock_prices_dict = {}
 
         # Load existing portfolio performance from DB
         try:
