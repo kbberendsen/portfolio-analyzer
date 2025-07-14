@@ -434,6 +434,8 @@ with st.sidebar:
 
     # Refresh Button to update the CSV
     if st.button('Refresh Data'):
+        get_portfolio_metadata.clear()
+        get_portfolio_performance_daily.clear()
         st.session_state.startup_refresh = False
         refresh_data(uploaded_file)
         time.sleep(1)
