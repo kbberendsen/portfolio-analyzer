@@ -55,9 +55,10 @@ def update_isin_mapping_json(df: pd.DataFrame):
     # Find unique ISINs from the transaction data
     isin_list = df[['ISIN', 'Product_Name_DeGiro', 'Exchange']].drop_duplicates()
     isin_list = isin_list[isin_list['ISIN'].notna() & (isin_list['ISIN'].astype(str).str.strip() != "")]
+    isin_list = isin_list[isin_list['ISIN'].apply(is_valid_isin)]
 
     # Add new ISINs to the mapping without overwriting existing entries
-    for isin, name, exchange in isin_list.values and is_valid_isin(isin):
+    for isin, name, exchange in isin_list.values:
         if isin not in existing_mapping:
             app_logger.info(f"[ISIN-MAPPING] Adding new ISIN mapping: {isin} -> {name}")
             existing_mapping[isin] = {
