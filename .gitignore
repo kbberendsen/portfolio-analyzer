@@ -18,4 +18,5 @@ uploads/
 # Ignore all files in the output folder
 output/
 
+# Streamlit secrets (auth)
 .streamlit/secrets.toml
