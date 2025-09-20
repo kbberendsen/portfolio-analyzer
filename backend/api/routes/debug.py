@@ -17,7 +17,7 @@ def trigger_db_refresh():
     scheduled_db_sync_job()
     return {"message": "Triggered db_sync manually"}
 
-@router.delete("/delete-data")
+@router.post("/delete-data")
 def reset_db():
     """
     Deletes all rows from portfolio_performance_daily and stock_prices tables.
