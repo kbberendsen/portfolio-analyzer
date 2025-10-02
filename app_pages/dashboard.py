@@ -161,6 +161,9 @@ if not st.session_state.startup_refresh:
                 if not metadata or not metadata.get("products"):
                     st.error("Failed to load portfolio data after initial calculation.")
                     st.stop()
+                else:
+                    st.session_state.startup_refresh = True
+                    st.rerun()
 
     except Exception as e:
         st.toast(f"Error during startup refresh logic: {e}")
