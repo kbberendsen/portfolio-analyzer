@@ -24,11 +24,11 @@ from backend.streamlit_utils.constants import (
 )
 
 # Auth
-if not st.user.is_logged_in:
-    st.warning("You must log in to use this app.")
-    if st.button("Log in"):
-        st.login("auth0")
-    st.stop()
+# if not st.user.is_logged_in:
+#     st.warning("You must log in to use this app.")
+#     if st.button("Log in"):
+#         st.login("auth0")
+#     st.stop()
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
@@ -453,7 +453,11 @@ with st.sidebar:
     with st.expander("Delete Data", expanded=False):
         st.warning("This will delete all data from the database. Initial load will be required after this action.")
         if st.button('Delete Data', type="primary"):
+            get_portfolio_metadata.clear()
+            get_portfolio_performance_daily.clear()
+            st.session_state.startup_refresh = False
             delete_data()
+            time.sleep(2)
             st.rerun()
 
 # Background refresh logic (runs once per session after startup)

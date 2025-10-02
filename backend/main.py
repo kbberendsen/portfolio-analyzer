@@ -24,11 +24,15 @@ async def lifespan(app: FastAPI):
     """Handles application startup and shutdown events."""
     # --- Startup ---
     app_logger.info("[STARTUP] Application startup sequence initiated.")
-    wait_for_db()
-    create_tables()
-    start_scheduled_tasks()
-    app_logger.info("[STARTUP] Application startup complete. API is ready.")
-    
+    try:
+        wait_for_db()
+        create_tables()
+        start_scheduled_tasks()
+        app_logger.info("[STARTUP] Application startup complete. API is ready.")
+    except Exception as e:
+        app_logger.exception("[STARTUP] Fatal error during application startup")
+        raise
+
     yield
     
     # --- Shutdown ---
