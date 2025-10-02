@@ -3,6 +3,7 @@ import os
 import json
 import warnings
 import traceback
+import re
 from backend.utils.logger import app_logger
 
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
@@ -10,6 +11,27 @@ warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning
 # File Paths
 TRANSACTION_FILE = 'uploads/Transactions.csv'
 MAPPING_FILE = 'output/isin_mapping.json'
+
+def detect_decimal_separator(file_path: str) -> str:
+    """
+    Detects whether ',' or '.' is the decimal separator in the given CSV file.
+    Looks at the first 20 lines of data.
+    """
+    with open(file_path, "r", encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if i > 5:  # only check first 5 lines
+                break
+            # Skip header
+            if i == 0:
+                continue
+            # Look for quoted numeric values -> European style
+            if re.search(r'"\d+,\d+"', line):
+                return ","
+            # Look for dot decimals -> US style
+            if re.search(r'\d+\.\d+', line):
+                return "."
+    # Default fallback
+    return "."
 
 def update_isin_mapping_json(df: pd.DataFrame):
     """
@@ -26,10 +48,14 @@ def update_isin_mapping_json(df: pd.DataFrame):
     if os.path.exists(MAPPING_FILE):
         with open(MAPPING_FILE, 'r') as f:
             existing_mapping = json.load(f)
+
+    def is_valid_isin(isin: str) -> bool:
+        return isinstance(isin, str) and re.fullmatch(r"[A-Z]{2}[A-Z0-9]{10}", isin) is not None
     
     # Find unique ISINs from the transaction data
     isin_list = df[['ISIN', 'Product_Name_DeGiro', 'Exchange']].drop_duplicates()
     isin_list = isin_list[isin_list['ISIN'].notna() & (isin_list['ISIN'].astype(str).str.strip() != "")]
+    isin_list = isin_list[isin_list['ISIN'].apply(is_valid_isin)]
 
     # Add new ISINs to the mapping without overwriting existing entries
     for isin, name, exchange in isin_list.values:
@@ -66,9 +92,17 @@ def load_and_prepare_data() -> pd.DataFrame:
         return pd.DataFrame()
     
     try:
-        df = pd.read_csv(TRANSACTION_FILE)
+        decimal_sep = detect_decimal_separator(TRANSACTION_FILE)
+        thousands_sep = "." if decimal_sep == "," else None
 
-        # Define the column names based on the old script's index-based renaming
+        df = pd.read_csv(
+            TRANSACTION_FILE,
+            delimiter=",",
+            decimal=decimal_sep,
+            thousands=thousands_sep
+        )
+
+        # Define the column names, index-based renaming
         column_names = {
             0: 'Date', 1: 'Time', 2: 'Product_Name_DeGiro', 3: 'ISIN', 
             4: 'Exchange', 6: 'Quantity', 7: 'Price', 8: 'Currency', 
