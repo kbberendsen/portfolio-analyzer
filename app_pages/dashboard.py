@@ -453,11 +453,19 @@ with st.sidebar:
     with st.expander("Delete Data", expanded=False):
         st.warning("This will delete all data from the database. Initial load will be required after this action.")
         if st.button('Delete Data', type="primary"):
+            delete_data()
+            # Check if data is empty by trying to retrieve metadata
+            timeout = 10
+            start = time.time()
+            while time.time() - start < timeout:
+                metadata = get_portfolio_metadata()
+                if not metadata or not metadata.get("products"):
+                    break
+                time.sleep(1)
+
             get_portfolio_metadata.clear()
             get_portfolio_performance_daily.clear()
             st.session_state.startup_refresh = False
-            delete_data()
-            time.sleep(2)
             st.rerun()
 
 # Background refresh logic (runs once per session after startup)
