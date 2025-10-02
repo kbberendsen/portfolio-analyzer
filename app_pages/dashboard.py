@@ -24,11 +24,11 @@ from backend.streamlit_utils.constants import (
 )
 
 # Auth
-# if not st.user.is_logged_in:
-#     st.warning("You must log in to use this app.")
-#     if st.button("Log in"):
-#         st.login("auth0")
-#     st.stop()
+if not st.user.is_logged_in:
+    st.warning("You must log in to use this app.")
+    if st.button("Log in"):
+        st.login("auth0")
+    st.stop()
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
@@ -152,7 +152,7 @@ if not st.session_state.startup_refresh:
         if not metadata or not metadata.get("products"):
             with st.spinner("Initial load in progress, please wait..."):
                 # Call blocking portfolio calculation to generate initial data
-                response = requests.post(f"{API_BASE_URL}/portfolio/calculate", timeout=300)
+                response = requests.post(f"{API_BASE_URL}/portfolio/calculate", timeout=1000)
                 response.raise_for_status()
                 # Clear caches and reload metadata after initial calculation
                 get_portfolio_metadata.clear()
