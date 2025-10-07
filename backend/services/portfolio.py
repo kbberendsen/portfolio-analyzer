@@ -8,6 +8,7 @@ from backend.utils.logger import app_logger
 from backend.services.transactions import get_transactions
 from backend.services.portfolio_analyzer import PortfolioAnalyzer
 from backend.utils.refresh_status import set_refresh_status, get_refresh_status
+from backend.utils.db import SessionLocal, load_portfolio_performance_from_db, load_stock_prices_from_db, save_portfolio_performance_to_db, save_stock_prices_to_db
 
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
@@ -82,34 +83,40 @@ def calc_portfolio():
                 prices = yf_stock_price_data.get(ticker, {})
                 for date, price in prices.items():
                     prices[date] = price * fx_rate.get(date, 1)
-        
-        # Load existing results from Parquet file
-        try:
-            portfolio_results_df = pd.read_parquet("output/portfolio_performance_daily.parquet")
-            app_logger.info("[PORTFOLIO-CALC] Loaded portfolio_performance_daily from Parquet")
 
-            # Remove last 2 days to force refresh (get end of day data)
-            last_2_days = sorted(portfolio_results_df['end_date'].unique())[-2:]
+        # Load existing portfolio performance from DB
+        try:
+            portfolio_results_df = load_portfolio_performance_from_db()
+            portfolio_results_df["start_date"] = pd.to_datetime(portfolio_results_df["start_date"]).dt.strftime("%Y-%m-%d")
+            portfolio_results_df["end_date"] = pd.to_datetime(portfolio_results_df["end_date"]).dt.strftime("%Y-%m-%d")
+            if portfolio_results_df.empty:
+                raise ValueError("Empty portfolio data from DB")
+            app_logger.info("[PORTFOLIO-CALC] Loaded portfolio_performance_daily from DB")
+
+            # Remove last 3 days to force refresh (get end of day data)
+            last_2_days = sorted(portfolio_results_df['end_date'].unique())[-3:]
             portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
 
         except Exception as e:
-            app_logger.warning(f"[PORTFOLIO-CALC] Failed to load portfolio_performance_daily from Parquet: {e}")
+            app_logger.warning(f"[PORTFOLIO-CALC] Failed to load portfolio_performance_daily from DB: {e}")
             portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
                                                             'avg_cost', 'total_cost', 'transaction_costs', 'current_value', 
                                                             'current_money_weighted_return', 'realized_return', 
                                                             'net_return', 'current_performance_percentage', 
                                                             'net_performance_percentage'])
-        
-        # Load stock prices from Parquet file
+
+        # Load stock prices from DB
         try:
-            stock_prices_df = pd.read_parquet('output/stock_prices.parquet')
+            stock_prices_df = load_stock_prices_from_db()
+            stock_prices_df["date"] = pd.to_datetime(stock_prices_df["date"]).dt.strftime("%Y-%m-%d")
+            if stock_prices_df.empty:
+                raise ValueError("Empty stock prices data from DB")
             stock_prices_df = stock_prices_df.dropna(subset=['price'])
             stock_prices_dict = stock_prices_df.groupby('ticker').apply(lambda x: x.set_index('date')['price'].to_dict()).to_dict()
-            app_logger.info("[PORTFOLIO-CALC] Loaded stock_prices from Parquet")
+            app_logger.info("[PORTFOLIO-CALC] Loaded stock_prices from DB")
         except Exception as e:
-            app_logger.warning(f"[PORTFOLIO-CALC] Failed to load stock_prices from Parquet: {e}")
+            app_logger.warning(f"[PORTFOLIO-CALC] Failed to load stock_prices from DB: {e}")
             stock_prices_dict = {}
-
 
         # Append fresh stock price data to stock_prices_dict
         for ticker, prices in yf_stock_price_data.items():
@@ -180,7 +187,7 @@ def calc_portfolio():
             # Append new results to the existing DataFrame
             portfolio_results_df = pd.concat([portfolio_results_df, new_portfolio_results_df], ignore_index=True)
 
-        # Save the updated DataFrame to a Parquet file
+        # Save the updated DataFrame to db
         portfolio_results_df = portfolio_results_df.dropna()
         portfolio_results_df['quantity'] = portfolio_results_df['quantity'].astype(int)
 
@@ -197,9 +204,12 @@ def calc_portfolio():
 
         portfolio_results_df['product'] = portfolio_results_df['ticker'].map(ticker_to_name).fillna('')
 
-        # Store parquet files
         # Daily table
-        portfolio_results_df.to_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'), index=False)
+        # Save updated daily portfolio performance to database (upsert)
+        db_save_start = time.time()
+        save_portfolio_performance_to_db(portfolio_results_df)
+        db_save_end = time.time()
+        app_logger.info(f"[PORTFOLIO-CALC] Saving portfolio performance to DB took {round(db_save_end - db_save_start, 2)} seconds.")
 
         # Stock prices
         stock_prices_records = []
@@ -223,33 +233,13 @@ def calc_portfolio():
 
         stock_prices_df = pd.DataFrame(stock_prices_records)
         stock_prices_df = stock_prices_df.dropna(subset=['price'])
-        stock_prices_df.to_parquet(os.path.join('output', 'stock_prices.parquet'), index=False)
+        db_save_start = time.time()
+        save_stock_prices_to_db(stock_prices_df)
+        db_save_end = time.time()
+        app_logger.info(f"[PORTFOLIO-CALC] Saving stock prices to DB took {round(db_save_end - db_save_start, 2)} seconds.")
 
-        app_logger.info("[PORTFOLIO-CALC] Daily output saved locally")
+        app_logger.info("[PORTFOLIO-CALC] Data saved to DB.")
 
-        # Extract monthly data from the daily data
-        monthly_results = portfolio_results_df.copy()
-        monthly_results['end_date'] = pd.to_datetime(monthly_results['end_date'])
-
-        # Set index and sort values to ensure correct selection
-        monthly_results = monthly_results.sort_values(['ticker', 'end_date'])
-
-        # Resample first-of-month data per ticker
-        monthly_results_df = (
-            monthly_results.set_index('end_date')
-            .groupby('ticker')
-            .resample('MS')
-            .first()
-            .reset_index(level=0, drop=True)
-            .reset_index()
-        )
-        
-        # Convert 'end_date' to string in 'YYYY-MM-DD' format
-        monthly_results_df['end_date'] = monthly_results_df['end_date'].dt.strftime('%Y-%m-%d')
-
-        # Save the updated DataFrame to a Parquet file
-        monthly_results_df.to_parquet(os.path.join('output', 'portfolio_performance_monthly.parquet'), index=False)
-        app_logger.info("[PORTFOLIO-CALC] Monthly output saved locally")
         # End timing
         end_time = time.time()
         app_logger.info(f"[PORTFOLIO-CALC] Execution time: {round(end_time - start_time, 2)} seconds")

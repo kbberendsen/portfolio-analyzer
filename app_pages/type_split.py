@@ -4,6 +4,14 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import os
 import json
+from backend.streamlit_utils.data_loader import get_portfolio_performance_daily
+
+# Auth
+# if not st.user.is_logged_in:
+#     st.warning("You must log in to use this app.")
+#     if st.button("Log in"):
+#         st.login("auth0")
+#     st.stop()
 
 # Set the page title
 st.set_page_config(page_title="Portfolio Analysis - Split", page_icon="📊", layout="centered")
@@ -11,7 +19,6 @@ st.set_page_config(page_title="Portfolio Analysis - Split", page_icon="📊", la
 st.title("Portfolio Analysis - Split")
 
 # Load portfolio data
-portfolio_file = os.path.join('output', 'portfolio_performance_daily.parquet')
 mapping_path = os.path.join('output', 'isin_mapping.json')
 
 # Dictionary to rename the performance metrics columns for display purposes
@@ -32,14 +39,12 @@ rename_dict = {
     'net_performance_percentage': 'Net Performance (%)'
 }
 
-if os.path.exists(portfolio_file):
-    # Load monthly and daily data
-    df = pd.read_parquet(portfolio_file)
-    
+# Load portfolio data
+df = get_portfolio_performance_daily()
+if not df.empty:
     # Rename columns
     df = df.rename(columns=rename_dict)
 
-    df['End Date'] = df['End Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
     df = df.sort_values(by='End Date', ascending=True)
 
     # Remove 'Full Portfolio' entry
@@ -64,8 +69,8 @@ if os.path.exists(portfolio_file):
 
     # DATE  FILTER    
     # Set the full date range as min and max values for the slider
-    max_date = df['End Date'].max().to_pydatetime()
-    min_date = df['End Date'].min().to_pydatetime()
+    max_date = df['End Date'].max()
+    min_date = df['End Date'].min()
 
     # Date selection
     date_selection = st.segmented_control(
@@ -115,7 +120,7 @@ if os.path.exists(portfolio_file):
     # METRIC FILTER
     # Performance metrics
     performance_metrics = ["Net Performance (%)", "Net Return (€)", "Total Cost (€)", "Current Value (€)"]
-    default_index_per = performance_metrics.index("Current Value (€)")
+    default_index_per = performance_metrics.index("Net Performance (%)")
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select", width=250)
     
     # Group by Product Type and aggregate Net Return (€) and Total Cost (€)

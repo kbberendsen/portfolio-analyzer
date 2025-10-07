@@ -1,103 +1,189 @@
-import pandas as pd
-import numpy as np
-from supabase import create_client, Client
-from dotenv import load_dotenv
 import os
+import pandas as pd
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import OperationalError
+from backend.db.base import Base 
+from backend.models.portfolio_daily import PortfolioPerformanceDailyTable
+from backend.models.stock_prices import StockPricesTable
+from backend.utils.logger import app_logger
 import time
 
-# Load environment variables from .env file
-load_dotenv()
+POSTGRES_USER = os.getenv("POSTGRES_USER", "portfolio_user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "portfolio_pass")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "portfolio_db")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
-class DB:
-    def __init__(self):
-        SUPABASE_URL = os.getenv("SUPABASE_URL")
-        SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-        # Initialize the Supabase client
-        self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+POSTGRES_URL = os.getenv(
+    "DATABASE_URL",
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+)
 
-        def _retry_operation(operation, max_retries, *args, **kwargs):
-            """Helper method to retry an operation with a specified number of retries."""
-            for attempt in range(max_retries):
-                try:
-                    return operation(*args, **kwargs)
-                except Exception as e:
-                    print(f"Attempt {attempt + 1} failed: {e}")
-                    if attempt + 1 == max_retries:
-                        print("Max retries reached. Operation failed.")
-                        return None
-                    time.sleep(attempt + 0.5)  # Increasing sleep duration after each retry
+engine = create_engine(POSTGRES_URL)
 
-        self._retry_operation = _retry_operation
+def wait_for_db():
+    """
+    At startup, wait for the database to be ready before proceeding.
+    This function is called from the main application's startup event.
+    """
+    MAX_RETRIES = 15
+    RETRY_DELAY = 5  # seconds
 
-    def get_row_count(self, table_name: str, max_retries=3) -> int:
-        """Returns the number of rows in the given table."""
-        def operation():
-            response = self.supabase.table(table_name).select("count").single().execute()
-            return response
+    for i in range(MAX_RETRIES):
+        try:
+            app_logger.info(f"[DB] Attempting to connect to the database (attempt {i+1}/{MAX_RETRIES})...")
+            connection = engine.connect()
+            connection.close()
+            app_logger.info("[DB] Database connection successful.")
+            return
+        except OperationalError:
+            app_logger.warning(f"[DB] Database connection failed. Retrying in {RETRY_DELAY} seconds...")
+            if i + 1 == MAX_RETRIES:
+                app_logger.error("[DB] Could not connect to the database after multiple retries. Application will not start.")
+                raise
+            time.sleep(RETRY_DELAY)
 
-        return self._retry_operation(operation, max_retries)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    def upsert_to_supabase(self, df: pd.DataFrame, table_name: str, max_retries=5):
-        """
-        Upsert data to Supabase in bulk with retry mechanism.
+# Dependency to use in FastAPI
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-        :param df: DataFrame containing the data to be upserted
-        :param table: Name of the Supabase table to upsert data into
-        :param max_retries: Maximum number of retries for the upsert operation
-        """
-        # Convert the entire DataFrame to a list of dictionaries for bulk upsert
-        data = df.to_dict(orient='records')
+def create_tables():
+    app_logger.info("[DB] Ensuring all tables exist in the database...")
+    Base.metadata.create_all(bind=engine)
+    app_logger.info("[DB] Table check complete.")
 
-        def operation():
-            response = self.supabase.table(table_name).upsert(data).execute()
-            if 'error' in response:
-                print(f"Upsert failed: {response.error_message} for {table_name}")
-            else:
-                print(f"Successfully upserted {len(data)} rows into {table_name} table.")
-            return response
+def delete_all_data():
+    db = SessionLocal()
+    try:
+        # Ensure tables exist, create if missing
+        Base.metadata.create_all(bind=engine)
 
-        self._retry_operation(operation, max_retries)
+        # Clear rows from tables
+        db.query(PortfolioPerformanceDailyTable).delete()
+        db.query(StockPricesTable).delete()
 
-    def store_stock_prices(self, stock_price_data, max_retries=3):
-        """
-        Efficiently stores stock prices in the 'stock_prices' table using batch upsert.
-        """
-        table_name = "stock_prices"
+        db.commit()
+        app_logger.info("[DB] All data deleted from tables.")
+    except OperationalError as e:
+        db.rollback()
+        raise RuntimeError(f"Database operation failed: {e}")
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
 
-        # Flatten the dict into a list of records for batch processing
+from sqlalchemy.exc import OperationalError
+
+def check_postgres_connection():
+    try:
+        app_logger.info("[DB CHECK] Attempting to connect to Postgres...")
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        app_logger.info("[DB CHECK] Successfully connected to Postgres.")
+        return True
+    except OperationalError as e:
+        app_logger.error(f"[DB CHECK] PostgreSQL connection failed: {e}")
+        return False
+    except Exception as e:
+        app_logger.error(f"[DB CHECK] Unexpected error during DB connection check: {e}")
+        return False
+
+def load_portfolio_performance_from_db():
+    db = SessionLocal()
+    try:
+        rows = db.query(PortfolioPerformanceDailyTable).all()
+
+        # Extract dicts, excluding _sa_instance_state
         data = [
-            {"ticker": ticker, "date": date, "price": None if np.isnan(price) else price}
-            for ticker, date_prices in stock_price_data.items()
-            for date, price in date_prices.items()
+            {k: v for k, v in r.__dict__.items() if k != "_sa_instance_state"}
+            for r in rows
         ]
 
-        def operation():
-            response = self.supabase.table(table_name).upsert(data).execute()
-            if 'error' in response:
-                print("Upsert failed (stock prices)", response["error"])
-            else:
-                print(f"Successfully upserted {len(data)} rows into {table_name} table.")
-            return response
+        if not data:
+            # Get column names from the SQLAlchemy model
+            columns = [c.name for c in PortfolioPerformanceDailyTable.__table__.columns]
+            # Return empty DataFrame with these columns
+            return pd.DataFrame(columns=columns)
 
-        self._retry_operation(operation, max_retries)
+        return pd.DataFrame(data)
 
-    def fetch_all_df(self, table_name, max_retries=3):
-        """Fetch all rows from a Supabase table using pagination."""
-        all_rows = []
-        page_size = 1000  # Adjust the page size as needed
-        offset = 0
+    finally:
+        db.close()
 
-        def operation():
-            nonlocal offset
-            response = self.supabase.table(table_name).select('*').range(offset, offset + page_size - 1).execute()
-            if response.data:
-                all_rows.extend(response.data)
-                offset += page_size
-            return response
+def load_stock_prices_from_db():
+    db = SessionLocal()
+    try:
+        rows = db.query(StockPricesTable).all()
 
-        while True:
-            result = self._retry_operation(operation, max_retries)
-            if not result or not result.data:
-                break
+        # Extract dicts, excluding _sa_instance_state
+        data = [
+            {k: v for k, v in r.__dict__.items() if k != "_sa_instance_state"}
+            for r in rows
+        ]
 
-        return pd.DataFrame(all_rows)
+        if not data:
+            # Get column names from the SQLAlchemy model
+            columns = [c.name for c in StockPricesTable.__table__.columns]
+            # Return empty DataFrame with these columns
+            return pd.DataFrame(columns=columns)
+
+        return pd.DataFrame(data)
+
+    finally:
+        db.close()
+        
+def save_portfolio_performance_to_db(df):
+    db = SessionLocal()
+    try:
+        records = df.to_dict(orient="records")
+        table = PortfolioPerformanceDailyTable.__table__
+
+        stmt = insert(table).values(records)
+        update_cols = {c.name: c for c in stmt.excluded if c.name not in ['ticker', 'end_date']}
+        # Assumes 'ticker' and 'end_date' are PK, exclude them from update
+
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['ticker', 'end_date'],
+            set_=update_cols
+        )
+
+        db.execute(stmt)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+def save_stock_prices_to_db(df):
+    db = SessionLocal()
+    try:
+        records = df.to_dict(orient="records")
+        table = StockPricesTable.__table__
+
+        stmt = insert(table).values(records)
+        update_cols = {c.name: c for c in stmt.excluded if c.name not in ['ticker', 'date']}
+        # 'ticker' and 'date' as PK, exclude from update
+
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['ticker', 'date'],
+            set_=update_cols
+        )
+
+        db.execute(stmt)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()

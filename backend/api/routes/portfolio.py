@@ -17,6 +17,10 @@ def run_portfolio_calculation():
     This endpoint kicks off the data processing job.
     """
     try:
+        current_status = get_refresh_status()
+        if current_status == "running":
+            raise HTTPException(status_code=409, detail="Portfolio refresh already in progress")
+        
         # Call the function to perform the calculation.
         calc_portfolio()
         

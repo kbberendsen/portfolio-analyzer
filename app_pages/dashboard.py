@@ -4,57 +4,49 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import os
 import requests
-from backend.utils.api import post_api_request
+import time
+from backend.streamlit_utils.logs import get_log_files, read_last_n_lines_reversed
+from backend.streamlit_utils.data_loader import get_portfolio_performance_daily, get_portfolio_metadata
+from backend.streamlit_utils.api import (
+    trigger_portfolio_calculation,
+    trigger_db_sync,
+    delete_data,
+    is_backend_alive,
+    check_db_health,
+)
+from backend.streamlit_utils.constants import (
+    API_BASE_URL,
+    ENV_API_BASE_URL_KEY,
+    UPLOADS_DIR,
+    TRANSACTIONS_CSV,
+    PERFORMANCE_METRIC_RENAME,
+    DATE_RANGE_OPTIONS
+)
+
+# Auth
+# if not st.user.is_logged_in:
+#     st.warning("You must log in to use this app.")
+#     if st.button("Log in"):
+#         st.login("auth0")
+#     st.stop()
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000") # Use environment variable for API URL
+API_BASE_URL = os.getenv(ENV_API_BASE_URL_KEY, API_BASE_URL)
 
-def is_backend_alive():
-    try:
-        response = requests.get(API_BASE_URL, timeout=2)
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
-        return False
-    
-def cached_files_exist():
-    cached_files = [
-        os.path.join('output', 'portfolio_performance_daily.parquet'),
-        os.path.join('output', 'stock_prices.parquet')
-    ]
-    return all(os.path.exists(f) for f in cached_files)
+# --------------------
+# APP
+# --------------------
 
-# Backend triggers
-def trigger_portfolio_calculation():
-    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    return post_api_request(
-        f"{API_BASE_URL}/portfolio/calculate"
-    )
+# with st.sidebar:
+#     if st.button("Log out", type="primary"):
+#         st.logout()
+#         st.stop()
 
-def trigger_db_refresh():
-    return post_api_request(
-        f"{API_BASE_URL}/db/refresh",
-        success_message="Database refresh triggered successfully."
-    )
-
-def initial_db_load():
-    return post_api_request(
-        f"{API_BASE_URL}/db/initial-db-load"
-    )
-
-############ APP ############
-
-LOG_DIR = "logs"
-
-def get_log_files():
-    if not os.path.exists(LOG_DIR):
-        return []
-    return [f for f in os.listdir(LOG_DIR) if os.path.isfile(os.path.join(LOG_DIR, f))]
-
-def read_last_n_lines_reversed(filename, n=100):
-    with open(os.path.join(LOG_DIR, filename), 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    return "".join(lines[-n:][::-1])
+#     # Show welcome message only if logged in
+#     if st.user.is_logged_in and hasattr(st.user, "name"):
+#         st.markdown(f"Welcome {st.user.name}!")
+#         #st.markdown(f"Welcome {st.user.sub}!")
 
 with st.sidebar.expander("View Logs", expanded=False):
     log_files = get_log_files()
@@ -71,14 +63,28 @@ if not is_backend_alive():
     st.error("Backend API is not reachable. Please ensure the backend is running.")
     st.stop()  # Stop execution if backend is not reachable
 
+is_db_healthy, db_error = check_db_health()
+if not is_db_healthy:
+    st.error("⚠️ Cannot connect to the database. Please check backend and DB status.")
+    if db_error:
+        st.code(db_error, language="text")
+    st.stop()
+
 st.title("Stock Portfolio Dashboard")
 
-# Transactions file path
+
+# --------------------
+# Transactions File Upload
+# --------------------
+
 # Create uploads directory if it doesn't exist
-os.makedirs("uploads", exist_ok=True)
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 # Check if the uploads folder contains any CSV files
-csv_files = [f for f in os.listdir("uploads") if f.endswith(".csv")]
+csv_files = [f for f in os.listdir(UPLOADS_DIR) if f.endswith(".csv")]
+
+# File path for transactions CSV
+file_path = os.path.join(UPLOADS_DIR, TRANSACTIONS_CSV)
 
 # Check for transaction file in the uploads folder
 if not csv_files:
@@ -90,14 +96,10 @@ if not csv_files:
     uploaded_file = st.file_uploader("Upload your DeGiro transactions CSV file", type=["csv"])
     
     if uploaded_file:
-        os.makedirs("uploads", exist_ok=True)  # Ensure the uploads folder exists
-        file_path = os.path.join('uploads', 'Transactions.csv')
-
         df = pd.read_csv(uploaded_file)
         df.to_csv(file_path, index=False)
         st.success("File uploaded successfully! Please reload the page.")
-    
-    st.stop()  # Stop execution if no data is available
+    st.stop()
 
 # Placeholder for the loading spinner while refreshing data on startup
 loading_placeholder = st.empty()
@@ -137,106 +139,63 @@ def refresh_data(uploaded_file=None):
     
     # Trigger the backend API to refresh data
     try:
-        # Check if initial db load is needed
-        initial_db_load()
         trigger_portfolio_calculation()
-        if st.session_state.startup_refresh:
-            st.success(f"Data updated successfully! (Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-        
     except Exception as e:
         st.error(f"Error occurred while refreshing data: {e}")
-        
-def clear_cache():
-    cache_path_monthly = os.path.join('output', 'portfolio_performance_monthly.parquet')
-    cache_path_daily = os.path.join('output', 'portfolio_performance_daily.parquet')
-    cache_path_stock_prices = os.path.join('output', 'stock_prices.parquet')
-    cached_files = [cache_path_monthly, cache_path_daily, cache_path_stock_prices]
 
-    for file_path in cached_files:
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-            print(f"{file_path} has been deleted.")
-
-    st.info("Cached data cleared. Refreshing data. This will take some time.")
-
-# Startup refresh logic
+# # Startup refresh logic
 if not st.session_state.startup_refresh:
+    try:
+        # Load metadata to check if it's the first run
+        metadata = get_portfolio_metadata()
 
-    if cached_files_exist():
-        try:
-            response = requests.post(f"{API_BASE_URL}/portfolio/refresh")
-        except Exception as e:
-            st.toast(f"Error starting background refresh: {e}")
+        if not metadata or not metadata.get("products"):
+            with st.spinner("Initial load in progress, please wait..."):
+                # Call blocking portfolio calculation to generate initial data
+                response = requests.post(f"{API_BASE_URL}/portfolio/calculate", timeout=1000)
+                response.raise_for_status()
+                # Clear caches and reload metadata after initial calculation
+                get_portfolio_metadata.clear()
+                get_portfolio_performance_daily.clear()
+                metadata = get_portfolio_metadata()
+                if not metadata or not metadata.get("products"):
+                    st.error("Failed to load portfolio data after initial calculation.")
+                    st.stop()
+                else:
+                    st.session_state.startup_refresh = True
+                    st.rerun()
 
-        st.session_state.startup_refresh = True
+    except Exception as e:
+        st.toast(f"Error during startup refresh logic: {e}")
+        # Attempt to show the ticker mapping page if there's an issue
+        st.page_link("app_pages/ticker_mapping.py", label="Click here to check ticker mapping", icon="ℹ️")
+        st.stop()
 
-    else:
-        # No cached files -> Run blocking calculation synchronously
-        with st.spinner("No cached data found. Running initial portfolio calculation..."):
-            refresh_data()
-            st.session_state.startup_refresh = True
+    st.session_state.startup_refresh = True
 
 # Clear the placeholder once the data is ready
 loading_placeholder.empty()
 
-# Dictionary to rename the performance metrics columns for display purposes
-rename_dict = {
-    'product': 'Product',
-    'ticker': 'Ticker',
-    'quantity': 'Quantity',
-    'start_date': 'Start Date',
-    'end_date': 'End Date',
-    'avg_cost': 'Average Cost (€)',
-    'total_cost': 'Total Cost (€)',
-    'transaction_costs': 'Transaction Costs (€)',
-    'current_value': 'Current Value (€)',
-    'current_money_weighted_return': 'Current Money Weighted Return (€)',
-    'realized_return': 'Realized Return (€)',
-    'net_return': 'Net Return (€)',
-    'current_performance_percentage': 'Current Performance (%)',
-    'net_performance_percentage': 'Net Performance (%)'
-}
-
 try:
-    # Load daily data
-    df = pd.read_parquet(os.path.join('output', 'portfolio_performance_daily.parquet'))
-
-    # If df is empty
-    if df.empty:
-        if st.button('Force refresh', type="primary"):
-            trigger_portfolio_calculation()
-            st.session_state.startup_refresh = False
-            st.rerun()
-
-except:
-    st.warning(f"Failed loading data. Are the stock tickers mapped correctly? Check GitHub project documention for instructions.")
-    st.page_link("app_pages/ticker_mapping.py", label="Click here to check ticker mapping", icon="ℹ️")
-    st.markdown(
-        "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
-    )
-    if st.button('Clear Cached Data', type="primary"):
-        clear_cache()
-        st.session_state.startup_refresh = False
-        st.rerun()
+    # Load metadata for filters
+    metadata = get_portfolio_metadata()
+    if not metadata or not metadata.get("products"):
+        st.info("No portfolio data found. Please upload a transaction file and refresh the data.")
+        st.stop()
+except Exception as e:
+    st.error(f"Failed to load portfolio metadata: {e}")
     st.stop()
-
-# Rename columns
-df = df.rename(columns=rename_dict)
-
-# Convert dates to datetime format
-df['Start Date'] = pd.to_datetime(df['Start Date'])
-df['End Date'] = pd.to_datetime(df['End Date'])
 
 # Move the file uploader and refresh button to the sidebar
 with st.sidebar:
     # Sort product options
-    product_options = sorted(df['Product'].unique().tolist())
+    product_options = sorted(metadata.get("products", []))
     if "Full portfolio" in product_options:
         product_options.remove("Full portfolio")
         product_options.insert(0, "Full portfolio")
 
     # Set default index for "Full Portfolio"
-    default_index = product_options.index("Full portfolio")
+    default_index = product_options.index("Full portfolio") if "Full portfolio" in product_options else 0
     selected_product = st.selectbox("Select a Product", options=product_options, index=default_index, key="product_select")
 
     # Dropdown to select another product for comparison
@@ -244,9 +203,31 @@ with st.sidebar:
     selected_compare_product = st.selectbox("Compare with another Product", options=compare_product_options, index=0, key="compare_product_select")
 
     # Performance metrics
-    performance_metrics = [col for col in df.columns if col not in ['Product', 'Ticker', 'Start Date', 'End Date']]
-    default_index_per = performance_metrics.index("Net Performance (%)")
+    # Define metrics from the rename_dict to avoid needing the full dataframe upfront
+    non_metric_cols = ['Product', 'Ticker', 'Start Date', 'End Date']
+    performance_metrics = sorted([v for k, v in PERFORMANCE_METRIC_RENAME.items() if v not in non_metric_cols])
+    default_index_per = performance_metrics.index("Net Performance (%)") if "Net Performance (%)" in performance_metrics else 0
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select")
+
+# Prepare list of products to fetch data for
+products_to_fetch = [selected_product]
+if selected_compare_product != "None":
+    products_to_fetch.append(selected_compare_product)
+
+try:
+    # Load only the data for the selected products
+    df = get_portfolio_performance_daily(products=products_to_fetch)
+
+    if df.empty:
+        st.info(f"No data found for product(s): {', '.join(products_to_fetch)}")
+        st.stop()
+
+    # Rename columns for display
+    df = df.rename(columns=PERFORMANCE_METRIC_RENAME)
+
+except Exception as e:
+    st.error(f"Failed to load performance data: {e}")
+    st.stop()
 
 # Filter on product
 product_df = df[df['Product'] == selected_product]
@@ -254,13 +235,12 @@ compare_product_df = df[df['Product'] == selected_compare_product] if selected_c
 
 # DATE  FILTER    
 # Set the full date range as min and max values for the slider
-max_date = df['End Date'].max().to_pydatetime()
-min_date = df['End Date'].min().to_pydatetime()
+max_date, min_date = metadata.get("max_date"), metadata.get("min_date")
 
 # Date selection
 date_selection = st.segmented_control(
     "Date Range",
-    options=["1Y", "3M", "1M", "1W", "YTD", "Last year", "Last month", "All time"],
+    options=DATE_RANGE_OPTIONS,
     default="1Y",
     selection_mode="single",
 )
@@ -430,6 +410,23 @@ if not filtered_df.empty:
                         name=f"{selected_product}", 
                         line=dict(color="#1f77b4", shape='spline', smoothing=0.7))
     
+    # Add dashed line at y=0
+    if (filtered_df[selected_metric] < 0).any():
+        fig.add_shape(
+            type="line",
+            x0=filtered_df["End Date"].min(),
+            x1=filtered_df["End Date"].max(),
+            y0=0,
+            y1=0,
+            line=dict(
+                color="black",
+                width=1,
+                dash="dash"
+            ),
+            xref="x",
+            yref="y"
+        )
+    
     fig.update_layout(width=1200, height=400, margin=dict(l=0, r=0, t=50, b=50),)
 
     # Add comparison line if another product is selected
@@ -451,32 +448,60 @@ else:
 with st.expander("Data", expanded=False):
     st.write(filtered_df.drop(columns=['Start Date']))
 
-# File upload
 with st.sidebar:
     # File uploader for the user to upload a new CSV file
     uploaded_file = st.file_uploader("Upload New Transactions CSV", type=["csv"])
 
     # Refresh Button to update the CSV
     if st.button('Refresh Data'):
+        get_portfolio_metadata.clear()
+        get_portfolio_performance_daily.clear()
         st.session_state.startup_refresh = False
         refresh_data(uploaded_file)
+        time.sleep(1)
         st.rerun()
 
     # Refresh Button to refresh database if env variable is set to true
     if os.getenv("USE_SUPABASE", "true").lower() == "true":
-        if st.button('Refresh Database'):
-            st.info("Upserting cached data to database and refreshing locally cached data. This will take some time.")
-            # Run db_refresh (API) to update the CSV
-            try:
-                trigger_db_refresh()
-                if st.session_state.startup_refresh:
-                    st.success(f"Database refreshed successfully! (Last refresh: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-            except Exception as e:
-                st.error(f"Error occurred while refreshing database: {e}")
+        if st.button('Sync with Database'):
+            # The trigger_db_sync function calls the API and handles showing
+            # a success, warning, or error message.
+            if trigger_db_sync():
+                time.sleep(2)
+                st.rerun()
+    
+    with st.expander("Delete Data", expanded=False):
+        st.warning("This will delete all data from the database. Initial load will be required after this action.")
+        if st.button('Delete Data', type="primary"):
+            delete_data()
+            # Check if data is empty by trying to retrieve metadata
+            timeout = 10
+            start = time.time()
+            while time.time() - start < timeout:
+                metadata = get_portfolio_metadata()
+                if not metadata or not metadata.get("products"):
+                    break
+                time.sleep(1)
+
+            get_portfolio_metadata.clear()
+            get_portfolio_performance_daily.clear()
             st.session_state.startup_refresh = False
             st.rerun()
-    
-    if st.button('Clear Cached Data', type="primary"):
-        clear_cache()
-        st.session_state.startup_refresh = False
-        st.rerun()
+
+# Background refresh logic (runs once per session after startup)
+if st.session_state.startup_refresh and "background_refresh_triggered" not in st.session_state:
+    try:
+        status_resp = requests.get(f"{API_BASE_URL}/portfolio/refresh/status", timeout=5)
+        status_info = status_resp.json()
+        if status_info.get("status") != "running":
+            refresh_resp = requests.post(f"{API_BASE_URL}/portfolio/refresh", timeout=10)
+            if refresh_resp.status_code == 409:
+                st.toast("Portfolio refresh already in progress.")
+            elif refresh_resp.status_code != 200:
+                st.warning(f"Unexpected response from refresh endpoint: {refresh_resp.status_code}")
+        else:
+            st.toast("Portfolio refresh already in progress.")
+        st.session_state.background_refresh_triggered = True
+    except Exception as e:
+        st.toast(f"Error triggering background refresh: {e}")
+        st.session_state.background_refresh_triggered = True
