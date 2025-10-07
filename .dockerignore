@@ -1,5 +1,24 @@
-.env
-output/
-uploads/
-data/
+*.pyc
+*.out
+*.env
+.venv/
+
+terminal.txt
+test.py
+test.ipynb
 logs/
+
+# Ignore all files in the data folder
+data/
+
+# Ignore data backup
+data_backup/
+
+# Ignore in the uploads
+uploads/
+
+# Ignore all files in the output folder
+output/
+
+# Streamlit secrets (auth)
+.streamlit/secrets.toml

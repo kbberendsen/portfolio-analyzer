@@ -24,11 +24,11 @@ from backend.streamlit_utils.constants import (
 )
 
 # Auth
-if not st.user.is_logged_in:
-    st.warning("You must log in to use this app.")
-    if st.button("Log in"):
-        st.login("auth0")
-    st.stop()
+# if not st.user.is_logged_in:
+#     st.warning("You must log in to use this app.")
+#     if st.button("Log in"):
+#         st.login("auth0")
+#     st.stop()
 
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
@@ -38,15 +38,15 @@ API_BASE_URL = os.getenv(ENV_API_BASE_URL_KEY, API_BASE_URL)
 # APP
 # --------------------
 
-with st.sidebar:
-    if st.button("Log out", type="primary"):
-        st.logout()
-        st.stop()
+# with st.sidebar:
+#     if st.button("Log out", type="primary"):
+#         st.logout()
+#         st.stop()
 
-    # Show welcome message only if logged in
-    if st.user.is_logged_in and hasattr(st.user, "name"):
-        st.markdown(f"Welcome {st.user.name}!")
-        #st.markdown(f"Welcome {st.user.sub}!")
+#     # Show welcome message only if logged in
+#     if st.user.is_logged_in and hasattr(st.user, "name"):
+#         st.markdown(f"Welcome {st.user.name}!")
+#         #st.markdown(f"Welcome {st.user.sub}!")
 
 with st.sidebar.expander("View Logs", expanded=False):
     log_files = get_log_files()
@@ -409,6 +409,23 @@ if not filtered_df.empty:
                         mode='lines', 
                         name=f"{selected_product}", 
                         line=dict(color="#1f77b4", shape='spline', smoothing=0.7))
+    
+    # Add dashed line at y=0
+    if (filtered_df[selected_metric] < 0).any():
+        fig.add_shape(
+            type="line",
+            x0=filtered_df["End Date"].min(),
+            x1=filtered_df["End Date"].max(),
+            y0=0,
+            y1=0,
+            line=dict(
+                color="black",
+                width=1,
+                dash="dash"
+            ),
+            xref="x",
+            yref="y"
+        )
     
     fig.update_layout(width=1200, height=400, margin=dict(l=0, r=0, t=50, b=50),)
 

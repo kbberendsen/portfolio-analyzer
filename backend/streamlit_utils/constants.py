@@ -37,5 +37,5 @@ PERFORMANCE_METRIC_RENAME = {
     'net_performance_percentage': 'Net Performance (%)'
 }
 
-# Date range options for your segmented control
+# Date range options
 DATE_RANGE_OPTIONS = ["1Y", "3M", "1M", "1W", "YTD", "Last year", "Last month", "All time"]

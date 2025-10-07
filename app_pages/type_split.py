@@ -7,11 +7,11 @@ import json
 from backend.streamlit_utils.data_loader import get_portfolio_performance_daily
 
 # Auth
-if not st.user.is_logged_in:
-    st.warning("You must log in to use this app.")
-    if st.button("Log in"):
-        st.login("auth0")
-    st.stop()
+# if not st.user.is_logged_in:
+#     st.warning("You must log in to use this app.")
+#     if st.button("Log in"):
+#         st.login("auth0")
+#     st.stop()
 
 # Set the page title
 st.set_page_config(page_title="Portfolio Analysis - Split", page_icon="📊", layout="centered")
@@ -120,7 +120,7 @@ if not df.empty:
     # METRIC FILTER
     # Performance metrics
     performance_metrics = ["Net Performance (%)", "Net Return (€)", "Total Cost (€)", "Current Value (€)"]
-    default_index_per = performance_metrics.index("Current Value (€)")
+    default_index_per = performance_metrics.index("Net Performance (%)")
     selected_metric = st.selectbox("Select a Performance Metric", options=performance_metrics, index=default_index_per, key="metric_select", width=250)
     
     # Group by Product Type and aggregate Net Return (€) and Total Cost (€)

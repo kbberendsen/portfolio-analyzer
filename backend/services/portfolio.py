@@ -93,8 +93,8 @@ def calc_portfolio():
                 raise ValueError("Empty portfolio data from DB")
             app_logger.info("[PORTFOLIO-CALC] Loaded portfolio_performance_daily from DB")
 
-            # Remove last 2 days to force refresh (get end of day data)
-            last_2_days = sorted(portfolio_results_df['end_date'].unique())[-2:]
+            # Remove last 3 days to force refresh (get end of day data)
+            last_2_days = sorted(portfolio_results_df['end_date'].unique())[-3:]
             portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
 
         except Exception as e:

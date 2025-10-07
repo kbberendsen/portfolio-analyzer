@@ -1,16 +1,14 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from datetime import datetime, timedelta
-import os
+from datetime import timedelta
 from backend.streamlit_utils.data_loader import get_portfolio_performance_daily
 
 # Auth
-if not st.user.is_logged_in:
-    st.warning("You must log in to use this app.")
-    if st.button("Log in"):
-        st.login("auth0")
-    st.stop()
+# if not st.user.is_logged_in:
+#     st.warning("You must log in to use this app.")
+#     if st.button("Log in"):
+#         st.login("auth0")
+#     st.stop()
 
 # Set the page title
 st.set_page_config(page_title="Portfolio Analysis", page_icon="📊", layout="wide")

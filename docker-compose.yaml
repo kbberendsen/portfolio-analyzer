@@ -1,0 +1,30 @@
+services:
+  app:
+    image: ghcr.io/kbberendsen/portfolio-analyzer:beta
+    container_name: portfolio-analyzer-container
+    ports:
+      - "8502:8501"     # Streamlit beta on 8502 external
+    expose:
+      - "8001"          # FastAPI beta internal
+    volumes:
+      - ./output:/app/output
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./.streamlit:/app/.streamlit:ro
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: portfolio-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
