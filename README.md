@@ -34,12 +34,13 @@ docker compose up --force-recreate -d --build
 ```
 
 # Initial run
-Go to http://localhost:8501/ to see your stock portfolio dashboard! After running the app, the streamlit port (8501) can be redirected to another domain if desired.
+Go to http://localhost:8502/ to see your stock portfolio dashboard! After running the app, the port (8502) can be redirected to another domain if desired.
 
 ## Upload initial Transactions.csv (from DeGiro)
 - When opening the dashboard for the first time, upload a Transactions.csv file.
 - This transactions file can be found in your DeGiro portfolio. Go to inbox > transactions and select the full date range of all transactions. then click export (csv).
 - Upload the csv in the dashboard. The uploaded file will be stored in the 'uploads' directory in the portfolio-analyzer directory.
+- Go to the '([ticker mapping](#ticker-mapping))' tab on top. **Do not skip this step.**
 - Reload the page. Loading the dashboard for the first time ([after you've mapped the tickers](#ticker-mapping)) might take a few minutes, depending on the date range of transactions. Subsequent runs will take a few seconds to load.
 
 ## Updating Transactions.csv
@@ -52,12 +53,11 @@ After uploading your transaction csv file to the dashboard for the first time, y
 
 ```
 .
-├── .env
-├── cronjobs
-│   └── logs
+├── .streamlit
+├── logs
 ├── docker-compose.yaml
 └── output
-    └── cached data files
+    └── isin_mapping.json
 └── uploads
     └── Transactions.csv
 ```
