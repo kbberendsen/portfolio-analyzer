@@ -1,18 +1,22 @@
 services:
   app:
-    image: ghcr.io/kbberendsen/portfolio-analyzer:beta
+    image: ghcr.io/kbberendsen/portfolio-analyzer:latest
     container_name: portfolio-analyzer-container
     ports:
-      - "8502:8501"     # Streamlit beta on 8502 external
+      - "8502:8501"     # Streamlit on 8502 external
     expose:
-      - "8001"          # FastAPI beta internal
+      - "8001"          # FastAPI internal
     volumes:
       - ./output:/app/output
       - ./uploads:/app/uploads
       - ./logs:/app/logs
       - ./.streamlit:/app/.streamlit:ro
-    env_file:
-      - .env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio_db}
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-default_pass1234!}
     depends_on:
       - postgres
     restart: unless-stopped
@@ -21,8 +25,12 @@ services:
     image: postgres:16
     container_name: portfolio-postgres
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio_db}
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-default_pass1234!}
     volumes:
       - pgdata:/var/lib/postgresql/data
 

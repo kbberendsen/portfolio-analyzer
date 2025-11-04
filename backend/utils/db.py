@@ -11,9 +11,9 @@ from backend.utils.logger import app_logger
 import time
 
 POSTGRES_USER = os.getenv("POSTGRES_USER", "portfolio_user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "portfolio_pass")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "default_pass1234!")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "portfolio_db")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
 POSTGRES_URL = os.getenv(
