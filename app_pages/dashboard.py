@@ -305,7 +305,7 @@ if not filtered_df.empty:
     top_current_return_delta = round((top_current_return_end-top_current_return_start), 2)
 
     if top_current_return_start != 0:
-        top_current_return_delta_eur = f"+€ {abs(top_current_return_delta)}" if top_current_return_delta > 0 else f"-€ {abs(top_current_return_delta)}"
+        top_current_return_delta_eur = f"+€ {abs(top_current_return_delta):,.2f}" if top_current_return_delta > 0 else f"-€ {abs(top_current_return_delta)}"
         top_current_return_delta_per = round(((top_current_return_end-top_current_return_start)/abs(top_current_return_start))*100, 2)
     else:
         top_current_return_delta_eur = 0
@@ -325,11 +325,11 @@ if not filtered_df.empty:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric(label="Current Value on Last Day", value=f"€ {top_current_value_end}", delta=f"{top_current_value_delta_per} % | {top_current_value_delta_eur}", border=True)
+        st.metric(label="Current Value on Last Day", value=f"€ {top_current_value_end:,.2f}", delta=f"{top_current_value_delta_per} % | {top_current_value_delta_eur}", border=True)
     with col2:
-        st.metric(label="Current Return on Last Day", value=f"€ {top_current_return_end}", delta=f"{top_current_return_delta_per} % | {top_current_return_delta_eur}", border=True)
+        st.metric(label="Current Return on Last Day", value=f"€ {top_current_return_end:,.2f}", delta=f"{top_current_return_delta_per} % | {top_current_return_delta_eur}", border=True)
     with col3:
-        st.metric(label="Net Return on Last Day", value=f"€ {top_net_return_end}", delta=f"{top_net_return_delta_per} % | {top_net_return_delta_eur}", border=True)
+        st.metric(label="Net Return on Last Day", value=f"€ {top_net_return_end:,.2f}", delta=f"{top_net_return_delta_per} % | {top_net_return_delta_eur}", border=True)
     
     st.divider()
 
@@ -343,7 +343,7 @@ if not filtered_df.empty:
     top_selected_metric_delta = round((top_selected_metric_end-top_selected_metric_start), 2)
 
     if top_selected_metric_start != 0:
-        top_selected_metric_delta_eur = f"+€ {abs(top_selected_metric_delta)}" if top_selected_metric_delta > 0 else f"-€ {abs(top_selected_metric_delta)}"
+        top_selected_metric_delta_eur = f"+€ {abs(top_selected_metric_delta):,.2f}" if top_selected_metric_delta > 0 else f"-€ {abs(top_selected_metric_delta):,.2f}"
         top_selected_metric_delta_per = round(((top_selected_metric_end-top_selected_metric_start)/abs(top_selected_metric_start))*100, 2)
     else:
         top_selected_metric_delta_eur = 0
@@ -366,7 +366,7 @@ if not filtered_df.empty:
     
     if top_total_cost_ytd_start != 0:
         top_net_return_ytd_delta = round((top_net_return_end-top_net_return_ytd_start), 2)
-        top_net_return_ytd_delta_eur = f"+€ {abs(top_net_return_ytd_delta)}" if top_net_return_ytd_delta> 0 else f"-€ {abs(top_net_return_ytd_delta)}"
+        top_net_return_ytd_delta_eur = f"+€ {abs(top_net_return_ytd_delta):,.2f}" if top_net_return_ytd_delta> 0 else f"-€ {abs(top_net_return_ytd_delta):,.2f}"
         top_net_return_ytd_delta_per = round(((top_net_return_end-top_net_return_ytd_start)/abs(top_total_cost_ytd_start))*100, 2)
     else:
         top_net_return_ytd_delta_eur = 0
@@ -374,7 +374,7 @@ if not filtered_df.empty:
 
     # Adjust displayed string based on metric type
     if '€' in selected_metric:
-        selected_metric_value = f'€ {top_selected_metric_end}'
+        selected_metric_value = f'€ {top_selected_metric_end:,.2f}'
         selected_metric_delta = f'{top_selected_metric_delta_per} % | {top_selected_metric_delta_eur}'
     elif '%' in selected_metric:
         selected_metric_value = f'{top_selected_metric_end} %'
@@ -441,7 +441,7 @@ if not filtered_df.empty:
         # Set legend visible if two lines are plotted
         fig.update_layout(showlegend=True, legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", yanchor="bottom"))
 
-    st.plotly_chart(fig, use_container_width=False)
+    st.plotly_chart(fig, width='content')
 else:
     st.write("No data available for the selected product and date range.")
 

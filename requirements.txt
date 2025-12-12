@@ -1,8 +1,8 @@
 matplotlib==3.10.1
 pandas==2.2.3
-plotly==6.0.0
-streamlit==1.51.0
-yfinance==0.2.64
+plotly==6.5.0
+streamlit==1.52.1
+yfinance==0.2.66
 supabase==2.13.0
 python-dotenv==1.0.1
 fastapi==0.115.12

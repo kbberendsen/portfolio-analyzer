@@ -4,9 +4,9 @@ services:
     image: portfolio-analyzer:latest
     container_name: portfolio-analyzer-container
     ports:
-      - "8501:8501"     # Streamlit (public)
+      - "8501:8501"       # Streamlit external for dev
     expose:
-      - "8000"          # FastAPI (internal only within Docker network)
+      - "8000"            # FastAPI internal (dev)
     volumes:
       - ./output:/app/output
       - ./uploads:/app/uploads
@@ -14,19 +14,29 @@ services:
       - ./app_pages:/app/app_pages
       - ./backend:/app/backend
       - ./.streamlit:/app/.streamlit:ro
-    env_file:
-      - .env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio_db}
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-default_pass1234!}
     depends_on:
       - postgres
     restart: unless-stopped
-    command: sh -c "uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload & streamlit run app.py --server.port=8501 --server.address=0.0.0.0"
+    command: >
+      sh -c "uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload &
+      streamlit run app.py --server.port=8501 --server.address=0.0.0.0"
 
   postgres:
     image: postgres:16
     container_name: portfolio-postgres
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio_db}
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-default_pass1234!}
     volumes:
       - pgdata:/var/lib/postgresql/data
 

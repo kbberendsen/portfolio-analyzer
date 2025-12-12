@@ -193,18 +193,17 @@ if not df.empty:
         legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", yanchor="bottom")
     )
 
-    st.plotly_chart(fig, use_container_width=False)
+    st.plotly_chart(fig, width='content')
 
-    st.divider()
+    # Bar chart if types > 1
+    if len(split_df["Product Type"].unique()) > 1:
+        st.divider()
     
-    st.subheader(f"{selected_metric} Split by Product Type")
+        st.subheader(f"{selected_metric} Split by Product Type")
 
-    # Filter the latest day only
-    latest_day_df = split_df[split_df["End Date"] == selected_end_date]
+        # Filter the latest day only
+        latest_day_df = split_df[split_df["End Date"] == selected_end_date]
 
-    # Check for negative values in the selected metric
-    if (latest_day_df[selected_metric] < 0).any():
-        # Use bar chart if any value is negative
         bar_fig = px.bar(
             latest_day_df,
             x="Product Type",
@@ -216,22 +215,6 @@ if not df.empty:
         bar_fig.update_layout(showlegend=False)
         bar_fig.update_layout(bargap=0.4, height=350, margin=dict(l=0, r=0, t=25, b=0))
         st.plotly_chart(bar_fig, use_container_width=True)
-
-    else:
-        # Use pie chart if all values are positive
-        pie_fig = px.pie(
-            latest_day_df,
-            names="Product Type",
-            values=selected_metric,
-            hole=0.5,
-            color="Product Type",
-            color_discrete_map=product_type_colors
-        )
-        pie_fig.update_traces(textposition='inside', textinfo='percent+label')
-        pie_fig.update_layout(showlegend=False)
-        pie_fig.update_layout(height=350, margin=dict(l=0, r=0, t=25, b=0))
-        st.plotly_chart(pie_fig, use_container_width=True)
-
     
 else:
     st.error("Portfolio data not found. Please run the 'dashboard' page first to generate the portfolio performance data.")
