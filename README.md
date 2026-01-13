@@ -1,6 +1,6 @@
 Streamlit dashboard displaying analytics of a DeGiro stock portfolio.
 
-![screenshot_portfolio_dashboard](screenshot_portfolio_dashboard.png)
+![screenshot_portfolio_dashboard](screenshots/dashboard.png)
 
 # Installation
 
@@ -38,7 +38,7 @@ Go to http://localhost:8502/ to see your stock portfolio dashboard! After runnin
 
 ## Upload initial Transactions.csv (from DeGiro)
 - When opening the dashboard for the first time, upload a Transactions.csv file.
-- This transactions file can be found in your DeGiro portfolio. Go to inbox > transactions and select the full date range of all transactions. then click export (csv).
+- This transactions file can be found in your DeGiro portfolio. Go to inbox > transactions and select the full date range of all transactions. then click export (csv).![screenshot_portfolio_dashboard](screenshots/degiro-transactions.png)
 - Upload the csv in the dashboard. The uploaded file will be stored in the 'uploads' directory in the portfolio-analyzer directory.
 - Go to the '([ticker mapping](#ticker-mapping))' tab on top. **Do not skip this step.**
 - Reload the page. Loading the dashboard for the first time ([after you've mapped the tickers](#ticker-mapping)) might take a few minutes, depending on the date range of transactions. Subsequent runs will take a few seconds to load.
