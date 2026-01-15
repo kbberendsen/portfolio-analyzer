@@ -497,6 +497,7 @@ with st.sidebar:
                     break
                 time.sleep(1)
 
+            metadata = None
             get_portfolio_metadata.clear()
             get_portfolio_performance_daily.clear()
             st.session_state.startup_refresh = False
