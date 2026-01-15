@@ -20,7 +20,8 @@ from backend.streamlit_utils.constants import (
     UPLOADS_DIR,
     TRANSACTIONS_CSV,
     PERFORMANCE_METRIC_RENAME,
-    DATE_RANGE_OPTIONS
+    DATE_RANGE_OPTIONS,
+    METRIC_HELP_TEXTS
 )
 
 # Auth
@@ -300,8 +301,8 @@ if not filtered_df.empty:
         top_current_value_delta_per = 0
 
     # Top current return
-    top_current_return_start = filtered_df.iloc[-2].get('Current Money Weighted Return (€)', 0) if len(filtered_df) > 1 else 0
-    top_current_return_end = filtered_df.iloc[-1].get('Current Money Weighted Return (€)', 0)
+    top_current_return_start = filtered_df.iloc[-2].get('Current Return (€)', 0) if len(filtered_df) > 1 else 0
+    top_current_return_end = filtered_df.iloc[-1].get('Current Return (€)', 0)
     top_current_return_delta = round((top_current_return_end-top_current_return_start), 2)
 
     if top_current_return_start != 0:
@@ -325,11 +326,14 @@ if not filtered_df.empty:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric(label="Current Value on Last Day", value=f"€ {top_current_value_end:,.2f}", delta=f"{top_current_value_delta_per} % | {top_current_value_delta_eur}", border=True)
+        st.metric(label="Current Value on Last Day", value=f"€ {top_current_value_end:,.2f}", delta=f"{top_current_value_delta_per} % | {top_current_value_delta_eur}", border=True,
+                  help=METRIC_HELP_TEXTS.get('Current Value (€)'))
     with col2:
-        st.metric(label="Current Return on Last Day", value=f"€ {top_current_return_end:,.2f}", delta=f"{top_current_return_delta_per} % | {top_current_return_delta_eur}", border=True)
+        st.metric(label="Current Return on Last Day", value=f"€ {top_current_return_end:,.2f}", delta=f"{top_current_return_delta_per} % | {top_current_return_delta_eur}", border=True,
+                  help=METRIC_HELP_TEXTS.get('Current Return (€)'))
     with col3:
-        st.metric(label="Net Return on Last Day", value=f"€ {top_net_return_end:,.2f}", delta=f"{top_net_return_delta_per} % | {top_net_return_delta_eur}", border=True)
+        st.metric(label="Net Return on Last Day", value=f"€ {top_net_return_end:,.2f}", delta=f"{top_net_return_delta_per} % | {top_net_return_delta_eur}", border=True,
+                  help=METRIC_HELP_TEXTS.get('Net Return (€)'))
     
     st.divider()
 
@@ -387,18 +391,18 @@ if not filtered_df.empty:
     if ('Net' in selected_metric) and (str(datetime.now().year) in str(selected_end_date)):
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=False, width="content")
+            st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=False, width="content", help=METRIC_HELP_TEXTS.get(selected_metric))
         with col2:
             if top_total_cost_ytd_start == 0:
                 pass
             elif selected_metric == 'Net Performance (%)':
-                st.metric(label="YTD - Net Performance (%)", value=f"{top_net_return_ytd_delta_per} %", delta=f"{top_net_return_ytd_delta_eur}", border=False, width="content")
+                st.metric(label="YTD - Net Performance (%)", value=f"{top_net_return_ytd_delta_per} %", delta=f"{top_net_return_ytd_delta_eur}", border=False, width="content", help=METRIC_HELP_TEXTS.get('YTD - Net Performance (%)'))
             else:
-                st.metric(label="YTD - Net Return (€)", value=f" {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %", border=False, width="content")
+                st.metric(label="YTD - Net Return (€)", value=f" {top_net_return_ytd_delta_eur}", delta=f"{top_net_return_ytd_delta_per} %", border=False, width="content", help=METRIC_HELP_TEXTS.get('YTD - Net Return (€)'))
         with col3:
             pass
     else:
-        st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=False, width="content")
+        st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=False, width="content", help=METRIC_HELP_TEXTS.get(selected_metric))
 
     # Plot
     fig = px.line()
