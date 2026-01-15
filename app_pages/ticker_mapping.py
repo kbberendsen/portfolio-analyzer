@@ -8,6 +8,8 @@ from backend.streamlit_utils.constants import (
     API_BASE_URL,
     ENV_API_BASE_URL_KEY
 )
+from backend.streamlit_utils.api import delete_data
+from backend.streamlit_utils.data_loader import get_portfolio_performance_daily, get_portfolio_metadata
 
 # Auth
 # if not st.user.is_logged_in:
@@ -147,6 +149,7 @@ def search_ticker(query, preferred_exchanges=None):
     return "", ""
 
 st.info("Simplify the 'Display Name' column above to improve auto-fill results. E.g. 'Gamestop' instead of 'GAMESTOP CORPORATION C'")
+st.info("Saving a new mapping will delete the old data, forcing a new initial load with the updated mapping.")
     
 if st.button("Auto-fill empty tickers using display name"):
     st.session_state.df = edited_df
@@ -162,11 +165,21 @@ if st.button("Auto-fill empty tickers using display name"):
             time.sleep(1)
     st.session_state.df = new_df
     save_mapping(new_df)
+    # Force initial load after mapping change by deleting existing data
+    delete_data()
+    get_portfolio_metadata.clear()
+    get_portfolio_performance_daily.clear()
+    st.session_state.startup_refresh = False
     st.rerun()
 
 # Save button
 if st.button("Save mapping"):
     save_mapping(edited_df)
+    # Force initial load after mapping change by deleting existing data
+    delete_data()
+    get_portfolio_metadata.clear()
+    get_portfolio_performance_daily.clear()
+    st.session_state.startup_refresh = False
 
 st.divider()
 
@@ -203,6 +216,11 @@ with st.expander("Upload/download mapping JSON file", expanded=False):
                     json.dump(new_mapping, f, indent=4)
 
                 st.success("Mapping file uploaded and loaded successfully!")
+                # Force initial load after mapping change by deleting existing data
+                delete_data()
+                get_portfolio_metadata.clear()
+                get_portfolio_performance_daily.clear()
+                st.session_state.startup_refresh = False
                 st.rerun()
 
         except Exception as e:
@@ -224,10 +242,17 @@ with st.expander("Upload/download mapping JSON file", expanded=False):
 with st.expander("⚠️ Reset all tickers and display names (this cannot be undone)", expanded=False):
     st.warning("This will clear all tickers from the table and reset altered display names. Are you sure?")
     if st.button("Reset", type="primary"):
-        reset_df = st.session_state.df.copy()
-        reset_df["Ticker"] = ""
-        reset_df["Display Name"] = reset_df["Product Name (DeGiro)"]
-        st.session_state.df = reset_df
-        save_mapping(reset_df)
+        # Delete mapping json
+        try:
+            dir_path = "output"
+            if os.path.isdir(dir_path):
+                for filename in os.listdir(dir_path):
+                    file_path = os.path.join(dir_path, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+        except:
+            pass
         st.success("All tickers and display names have been reset.")
         st.rerun()
+
+        

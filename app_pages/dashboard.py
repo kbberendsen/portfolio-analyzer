@@ -473,7 +473,21 @@ with st.sidebar:
     with st.expander("Delete Data", expanded=False):
         st.warning("This will delete all data from the database. Initial load will be required after this action.")
         if st.button('Delete Data', type="primary"):
+
+            # Delete transaction csv
+            try:
+                dir_path = "uploads"
+                if os.path.isdir(dir_path):
+                    for filename in os.listdir(dir_path):
+                        file_path = os.path.join(dir_path, filename)
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+            except:
+                pass
+
+            # Delete database data (api)
             delete_data()
+
             # Check if data is empty by trying to retrieve metadata
             timeout = 10
             start = time.time()

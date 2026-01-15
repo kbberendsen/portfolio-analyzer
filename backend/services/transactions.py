@@ -99,7 +99,8 @@ def load_and_prepare_data() -> pd.DataFrame:
             TRANSACTION_FILE,
             delimiter=",",
             decimal=decimal_sep,
-            thousands=thousands_sep
+            thousands=thousands_sep,
+            dtype={6: str}
         )
 
         # Define the column names, index-based renaming
@@ -131,11 +132,17 @@ def load_and_prepare_data() -> pd.DataFrame:
             df['Product'] = ''
 
         # Data cleaning
+        df['Quantity'] = (
+            df['Quantity']
+                .astype(str)
+                .str.extract(r'^(-?\d+)', expand=False)  # <- allow optional '-'
+                .fillna(0)
+                .astype(int)
+        )
         df['Action'] = df['Quantity'].apply(lambda x: 'BUY' if x > 0 else 'SELL')
         df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y')
         df['Time'] = pd.to_datetime(df['Time'], format='%H:%M').dt.time
-   
-        df['Quantity'] = df['Quantity'].fillna(0).astype(float)
+
         df['Price'] = df['Price'].fillna(0).astype(float)
         df['Cost'] = df['Cost'].fillna(0).astype(float)
         df['Transaction_costs'] = df['Transaction_costs'].fillna(0).astype(float)
