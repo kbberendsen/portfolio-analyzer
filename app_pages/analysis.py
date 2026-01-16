@@ -23,6 +23,7 @@ rename_dict = {
     'start_date': 'Start Date',
     'end_date': 'End Date',
     'avg_cost': 'Average Cost (€)',
+    'cost_basis': 'Cost Basis (€)',
     'total_cost': 'Total Cost (€)',
     'current_value': 'Current Value (€)',
     'current_money_weighted_return': 'Current Money Weighted Return (€)',
@@ -112,7 +113,7 @@ if not df.empty:
     display_df = selected_day_df.copy()
 
     # Only select relevant columns
-    display_df = display_df[['Product', 'Quantity', 'Current Value (€)', 
+    display_df = display_df[['Product', 'Quantity', 'Current Value (€)', 'Cost Basis (€)',
                                 'Net Return (€)', 'Net Performance (%)', 'Total Cost (€)'
                     ]]
 
@@ -130,9 +131,9 @@ if not df.empty:
     # Allocation
     display_df["Current Allocation %"] = display_df['Current Value (€)'] / display_df['Current Value (€)'].sum() * 100
 
-    # Sort products by allocation and then by total cost
+    # Sort products by allocation and then by cost basis
     display_df = display_df.sort_values(
-        by=['Current Allocation %', 'Total Cost (€)'],
+        by=['Current Allocation %', 'Cost Basis (€)'],
         ascending=[False, False]
     )
 
@@ -145,7 +146,7 @@ if not df.empty:
     
     # Final column order
     display_df = display_df[['Product', 'Current Allocation %' ,'Quantity', 'Current Value (€)', 
-                                'Net Return (€)', 'Net Performance (%)', 'Net Performance (%) - Trend', 'Total Cost (€)'
+                                'Net Return (€)', 'Net Performance (%)', 'Net Performance (%) - Trend', 'Cost Basis (€)'
                     ]]
     
     def remove_flat_line(arr):
@@ -206,8 +207,8 @@ if not df.empty:
                     format="€ %.2f",
                     width="small",
                 ),
-                "Total Cost (€)": st.column_config.NumberColumn(
-                    "Total Cost (€)",
+                "Cost Basis (€)": st.column_config.NumberColumn(
+                    "Cost Basis (€)",
                     format="€ %.2f",
                     width="small"
                 ),

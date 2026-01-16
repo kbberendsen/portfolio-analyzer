@@ -190,6 +190,34 @@ if not st.session_state.startup_refresh:
         st.toast(f"Error during startup refresh logic: {e}")
         # Attempt to show the ticker mapping page if there's an issue
         st.page_link("app_pages/ticker_mapping.py", label="Click here to check ticker mapping", icon="ℹ️")
+        with st.expander("Delete Data", expanded=False):
+            st.warning("This will delete all data from the database. Initial load will be required after this action.")
+            if st.button('Delete Data', type="primary"):
+
+                # Delete transaction csv
+                try:
+                    file_path = "uploads/Transaction.csv"
+                    os.remove(file_path)
+                except:
+                    pass
+
+                # Delete database data (api)
+                delete_data()
+
+                # Check if data is empty by trying to retrieve metadata
+                timeout = 10
+                start = time.time()
+                while time.time() - start < timeout:
+                    metadata = get_portfolio_metadata()
+                    if not metadata or not metadata.get("products"):
+                        break
+                    time.sleep(1)
+
+                metadata = None
+                get_portfolio_metadata.clear()
+                get_portfolio_performance_daily.clear()
+                st.session_state.startup_refresh = False
+                st.rerun()
         st.stop()
 
     st.session_state.startup_refresh = True
@@ -241,6 +269,34 @@ try:
 
     if df.empty:
         st.info(f"No data found for product(s): {', '.join(products_to_fetch)}")
+        with st.expander("Delete Data", expanded=False):
+            st.warning("This will delete all data from the database. Initial load will be required after this action.")
+            if st.button('Delete Data', type="primary"):
+
+                # Delete transaction csv
+                try:
+                    file_path = "uploads/Transaction.csv"
+                    os.remove(file_path)
+                except:
+                    pass
+
+                # Delete database data (api)
+                delete_data()
+
+                # Check if data is empty by trying to retrieve metadata
+                timeout = 10
+                start = time.time()
+                while time.time() - start < timeout:
+                    metadata = get_portfolio_metadata()
+                    if not metadata or not metadata.get("products"):
+                        break
+                    time.sleep(1)
+
+                metadata = None
+                get_portfolio_metadata.clear()
+                get_portfolio_performance_daily.clear()
+                st.session_state.startup_refresh = False
+                st.rerun()
         st.stop()
 
     # Rename columns for display
@@ -424,17 +480,35 @@ if not filtered_df.empty:
     else:
         st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=False, width="content", help=METRIC_HELP_TEXTS.get(selected_metric))
 
+    # Checkbox for Cost Basis (€) below the plot
+    if selected_metric == "Current Value (€)":
+        st.session_state.show_cost_basis = st.checkbox("Show Cost Basis (€)", value=st.session_state.show_cost_basis, help=METRIC_HELP_TEXTS.get('Cost Basis (€)'))
+    else:
+        st.session_state.show_cost_basis = False
+
     # Plot
     fig = px.line()
 
-    # Add the first trace (main product) using add_scatter
-    fig.add_scatter(x=filtered_df['End Date'], 
-                        y=filtered_df[selected_metric], 
-                        mode='lines', 
-                        name=f"{selected_product}", 
-                        line=dict(color="#1f77b4", shape='spline', smoothing=0.7))
-    
-    # Add dashed line at y=0
+    # Add main product line
+    fig.add_scatter(
+        x=filtered_df['End Date'],
+        y=filtered_df[selected_metric],
+        mode='lines',
+        name=f"{selected_product}",
+        line=dict(color="#1f77b4", shape='spline', smoothing=0.7)
+    )
+
+    # Add grey Cost Basis line if checkbox is checked
+    if selected_metric == "Current Value (€)" and st.session_state.show_cost_basis:
+        fig.add_scatter(
+            x=filtered_df['End Date'],
+            y=filtered_df['Cost Basis (€)'],
+            mode='lines',
+            name="Cost Basis (€)",
+            line=dict(color='grey', shape='spline', smoothing=0.7, dash='dot')
+        )
+
+    # Add dashed line at y=0 if needed
     if (filtered_df[selected_metric] < 0).any():
         fig.add_shape(
             type="line",
@@ -442,30 +516,44 @@ if not filtered_df.empty:
             x1=filtered_df["End Date"].max(),
             y0=0,
             y1=0,
-            line=dict(
-                color="black",
-                width=1,
-                dash="dash"
-            ),
+            line=dict(color="black", width=1, dash="dash"),
             xref="x",
             yref="y"
         )
-    
-    fig.update_layout(width=1200, height=400, margin=dict(l=0, r=0, t=50, b=50),)
 
     # Add comparison line if another product is selected
     if not compare_product_df.empty:
-        compare_filtered_df = compare_product_df[(compare_product_df['End Date'] >= selected_start_date) & (compare_product_df['End Date'] <= selected_end_date)].sort_values(by='End Date')
-        fig.add_scatter(x=compare_filtered_df['End Date'], 
-                        y=compare_filtered_df[selected_metric], 
-                        mode='lines', 
-                        name=f"{selected_compare_product}", 
-                        line=dict(color='orange', shape='spline', smoothing=0.7))
+        compare_filtered_df = compare_product_df[
+            (compare_filtered_df['End Date'] >= selected_start_date) &
+            (compare_filtered_df['End Date'] <= selected_end_date)
+        ].sort_values(by='End Date')
 
-        # Set legend visible if two lines are plotted
-        fig.update_layout(showlegend=True, legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", yanchor="bottom"))
+        fig.add_scatter(
+            x=compare_filtered_df['End Date'],
+            y=compare_filtered_df[selected_metric],
+            mode='lines',
+            name=f"{selected_compare_product}",
+            line=dict(color='orange', shape='spline', smoothing=0.7)
+        )
 
-    st.plotly_chart(fig, width='content')
+    # Layout
+    fig.update_layout(
+        width=1200,
+        height=400,
+        margin=dict(l=0, r=0, t=50, b=50),
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            y=1.15,         # higher than 1 to place above plot
+            x=0.5,
+            xanchor="center",
+            yanchor="bottom"
+        )
+    )
+
+    # Display
+    st.plotly_chart(fig, use_container_width=True)
+
 else:
     st.write("No data available for the selected product and date range.")
 
@@ -500,12 +588,8 @@ with st.sidebar:
 
             # Delete transaction csv
             try:
-                dir_path = "uploads"
-                if os.path.isdir(dir_path):
-                    for filename in os.listdir(dir_path):
-                        file_path = os.path.join(dir_path, filename)
-                        if os.path.isfile(file_path):
-                            os.remove(file_path)
+                file_path = "uploads/Transaction.csv"
+                os.remove(file_path)
             except:
                 pass
 

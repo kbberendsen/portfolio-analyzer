@@ -13,6 +13,7 @@ class PortfolioPerformanceDailyTable(Base):
     start_date = Column(Date)
     end_date = Column(Date)
     avg_cost = Column(Numeric)
+    cost_basis = Column(Numeric)
     total_cost = Column(Numeric)
     transaction_costs = Column(Numeric)
     current_value = Column(Numeric)
@@ -36,6 +37,7 @@ class PortfolioPerformanceDaily(BaseModel):
     start_date: date
     end_date: date
     avg_cost: float
+    cost_basis: float
     total_cost: float
     transaction_costs: float
     current_value: float

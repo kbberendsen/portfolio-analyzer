@@ -32,6 +32,7 @@ PERFORMANCE_METRIC_RENAME = {
     'start_date': 'Start Date',
     'end_date': 'End Date',
     'avg_cost': 'Average Cost (€)',
+    'cost_basis': 'Cost Basis (€)',
     'total_cost': 'Total Cost (€)',
     'transaction_costs': 'Transaction Costs (€)',
     'current_value': 'Current Value (€)',
@@ -48,6 +49,11 @@ METRIC_HELP_TEXTS = {
         "The average purchase price per unit of the currently held position, "
         "including transaction costs. Calculated as total cost divided by the "
         "number of units currently held."
+    ),
+
+    'Cost Basis (€)': (
+        "The total capital invested in the currently held position, "
+        "calculated as the number of units held multiplied by the average purchase price per unit."
     ),
 
     'Total Cost (€)': (

@@ -100,7 +100,7 @@ def calc_portfolio():
         except Exception as e:
             app_logger.warning(f"[PORTFOLIO-CALC] Failed to load portfolio_performance_daily from DB: {e}")
             portfolio_results_df = pd.DataFrame(columns=['product', 'ticker', 'quantity', 'start_date', 'end_date', 
-                                                            'avg_cost', 'total_cost', 'transaction_costs', 'current_value', 
+                                                            'avg_cost', 'cost_basis', 'total_cost', 'transaction_costs', 'current_value', 
                                                             'current_money_weighted_return', 'realized_return', 
                                                             'net_return', 'current_performance_percentage', 
                                                             'net_performance_percentage'])

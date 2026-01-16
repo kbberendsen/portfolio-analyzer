@@ -168,6 +168,9 @@ class PortfolioAnalyzer:
         current_performance_percentage = ((current_return) / purchase_cost) * 100 if (current_return and purchase_cost) else 0
         net_performance_percentage = ((current_return + realized_return) / purchase_cost) * 100 if purchase_cost else 0
 
+        # Cost basis
+        cost_basis = quantity_held*avg_cost
+
         return {
             "product": product,
             "ticker": stock,
@@ -175,6 +178,7 @@ class PortfolioAnalyzer:
             "start_date": start_date.strftime('%Y-%m-%d'),
             "end_date": end_date.strftime('%Y-%m-%d'),
             "avg_cost": round(avg_cost, 2),
+            "cost_basis": round(cost_basis, 2),
             "total_cost": round(purchase_cost, 2),
             "transaction_costs": round(transaction_costs_total, 2),
             "current_value": round(current_value, 2),
@@ -208,8 +212,10 @@ class PortfolioAnalyzer:
 
         if quantity > 0:
             avg_cost_port = purchase_cost/quantity
+            cost_basis = quantity*avg_cost_port
         else:
             avg_cost_port = 0
+            cost_basis = 0
 
         # Performance percentages
         current_performance_percentage = ((current_return) / purchase_cost) * 100 if (current_return and purchase_cost) else 0
@@ -223,6 +229,7 @@ class PortfolioAnalyzer:
                 "start_date": start_date,
                 "end_date": end_date,
                 "avg_cost": round(avg_cost_port, 2),
+                "cost_basis": round(cost_basis, 2),
                 "total_cost": round(purchase_cost, 2),
                 "transaction_costs": round(transaction_costs_total, 2),
                 "current_value": round(current_value, 2),

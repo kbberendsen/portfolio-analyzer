@@ -67,8 +67,10 @@ def delete_all_data():
         Base.metadata.create_all(bind=engine)
 
         # Clear rows from tables
-        db.query(PortfolioPerformanceDailyTable).delete()
-        db.query(StockPricesTable).delete()
+        # db.query(PortfolioPerformanceDailyTable).delete()
+        # db.query(StockPricesTable).delete()
+        Base.metadata.drop_all(bind=engine)
+        create_tables()
 
         db.commit()
         app_logger.info("[DB] All data deleted from tables.")
