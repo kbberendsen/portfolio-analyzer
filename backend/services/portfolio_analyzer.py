@@ -204,18 +204,18 @@ class PortfolioAnalyzer:
         for stock in stock_results.values():
             quantity += stock.get('quantity', 0)
             purchase_cost += stock.get('total_cost', 0)
+            cost_basis_total += stock.get('cost_basis', 0)
             transaction_costs_total += stock.get('transaction_costs', 0)
             current_value += stock.get('current_value', 0)
             current_return += stock.get('current_money_weighted_return', 0)
             realized_return += stock.get('realized_return', 0)
             net_return += stock.get('net_return', 0)
-
+            
         if quantity > 0:
             avg_cost_port = purchase_cost/quantity
-            cost_basis = quantity*avg_cost_port
         else:
             avg_cost_port = 0
-            cost_basis = 0
+            cost_basis_total = 0
 
         # Performance percentages
         current_performance_percentage = ((current_return) / purchase_cost) * 100 if (current_return and purchase_cost) else 0
@@ -229,7 +229,7 @@ class PortfolioAnalyzer:
                 "start_date": start_date,
                 "end_date": end_date,
                 "avg_cost": round(avg_cost_port, 2),
-                "cost_basis": round(cost_basis, 2),
+                "cost_basis": round(cost_basis_total, 2),
                 "total_cost": round(purchase_cost, 2),
                 "transaction_costs": round(transaction_costs_total, 2),
                 "current_value": round(current_value, 2),
