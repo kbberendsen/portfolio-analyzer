@@ -18,7 +18,9 @@ from backend.streamlit_utils.constants import (
     API_BASE_URL,
     ENV_API_BASE_URL_KEY,
     UPLOADS_DIR,
+    SCREENSHOTS_DIR,
     TRANSACTIONS_CSV,
+    DEGIRO_TRANSACTIONS_IMG,
     PERFORMANCE_METRIC_RENAME,
     DATE_RANGE_OPTIONS,
     METRIC_HELP_TEXTS
@@ -86,13 +88,16 @@ csv_files = [f for f in os.listdir(UPLOADS_DIR) if f.endswith(".csv")]
 
 # File path for transactions CSV
 file_path = os.path.join(UPLOADS_DIR, TRANSACTIONS_CSV)
+file_path_degiro = os.path.join(SCREENSHOTS_DIR, DEGIRO_TRANSACTIONS_IMG)
 
 # Check for transaction file in the uploads folder
 if not csv_files:
     st.warning("No DeGiro transaction data found. Please upload a CSV file to proceed. Check GitHub project documention for instructions.")
     st.markdown(
-        "📖 [Check the GitHub project documentation for instructions](https://github.com/kbberendsen/portfolio-analyzer)"
+        "📖 [Check the GitHub project documentation for full instructions](https://github.com/kbberendsen/portfolio-analyzer)"
     )
+    st.markdown("In DeGiro, go to 'inbox' and click 'transactions'. Make sure to always set the start date before your first transaction! Finally download the CSV and upload the file below.")
+    st.image(file_path_degiro)
 
     uploaded_file = st.file_uploader("Upload your DeGiro transactions CSV file", type=["csv"])
     
@@ -160,7 +165,22 @@ if not st.session_state.startup_refresh:
                 get_portfolio_performance_daily.clear()
                 metadata = get_portfolio_metadata()
                 if not metadata or not metadata.get("products"):
-                    st.error("Failed to load portfolio data after initial calculation.")
+                    st.error("Failed to load portfolio data after initial calculation. Did you already do the ticker mapping?")
+                    st.page_link("app_pages/ticker_mapping.py", label="Click here to check ticker mapping", icon="ℹ️")
+
+                    # Delete uploaded CSV file
+                    with st.expander("Delete uploaded CSV file", expanded=False):
+                        st.warning("This will delete the transactions CSV file. Do this if you have uploaded a faulty file.")
+                        if st.button("Delete", type="primary"):
+                            # Delete mapping json
+                            try:
+                                file_path = "uploads/Transactions.csv"
+                                os.remove(file_path)
+                                st.success("Transactions CSV file deleted.")
+                            except:
+                                st.error("Failed to delete CSV file.")
+                                pass
+                    st.rerun()
                     st.stop()
                 else:
                     st.session_state.startup_refresh = True

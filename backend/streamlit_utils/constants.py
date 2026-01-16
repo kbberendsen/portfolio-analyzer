@@ -6,9 +6,11 @@ ENV_API_BASE_URL_KEY = "API_BASE_URL"
 # Folder paths
 UPLOADS_DIR = "uploads"
 LOGS_DIR = "logs"
+SCREENSHOTS_DIR = "screenshots"
 
 # Filenames
 TRANSACTIONS_CSV = "Transactions.csv"
+DEGIRO_TRANSACTIONS_IMG = "degiro-transactions.png"
 
 # Date formats
 DATE_FORMAT_ISO = "%Y-%m-%d"

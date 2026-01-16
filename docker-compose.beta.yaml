@@ -9,6 +9,7 @@ services:
     volumes:
       - ./output:/app/output
       - ./uploads:/app/uploads
+      - ./screenshots:/app/screenshots
       - ./logs:/app/logs
       - ./.streamlit:/app/.streamlit:ro
     env_file:

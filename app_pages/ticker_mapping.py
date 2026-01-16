@@ -244,15 +244,12 @@ with st.expander("⚠️ Reset all tickers and display names (this cannot be und
     if st.button("Reset", type="primary"):
         # Delete mapping json
         try:
-            dir_path = "output"
-            if os.path.isdir(dir_path):
-                for filename in os.listdir(dir_path):
-                    file_path = os.path.join(dir_path, filename)
-                    if os.path.isfile(file_path):
-                        os.remove(file_path)
+            file_path = "output/isin_mapping.json"
+            os.remove(file_path)
+            st.success("All tickers and display names have been reset.")
         except:
+            st.error("Failed to reset mappings.")
             pass
-        st.success("All tickers and display names have been reset.")
         st.rerun()
 
         
