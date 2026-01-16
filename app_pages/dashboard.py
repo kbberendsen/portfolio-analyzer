@@ -528,12 +528,7 @@ if not filtered_df.empty:
                         y=compare_filtered_df[selected_metric], 
                         mode='lines', 
                         name=f"{selected_compare_product}", 
-                        line=dict(color='orange', shape='spline', smoothing=0.7))
-
-        # Set legend visible if two lines are plotted
-        fig.update_layout(showlegend=True, legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", yanchor="bottom"))
-
-    st.plotly_chart(fig, width='content')    
+                        line=dict(color='orange', shape='spline', smoothing=0.7))  
 
     # Layout
     fig.update_layout(
