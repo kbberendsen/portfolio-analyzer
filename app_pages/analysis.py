@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import timedelta
 from backend.streamlit_utils.data_loader import get_portfolio_performance_daily
+from backend.streamlit_utils.constants import METRIC_HELP_TEXTS
 
 # Auth
 # if not st.user.is_logged_in:
@@ -146,7 +147,7 @@ if not df.empty:
     
     # Final column order
     display_df = display_df[['Product', 'Current Allocation %' ,'Quantity', 'Current Value (€)', 
-                                'Net Return (€)', 'Net Performance (%)', 'Net Performance (%) - Trend', 'Cost Basis (€)'
+                                'Net Return (€)', 'Net Performance (%)', 'Net Performance (%) - Trend', 'Cost Basis (€)', 'Total Cost (€)'
                     ]]
     
     def remove_flat_line(arr):
@@ -201,16 +202,25 @@ if not df.empty:
                     "Current Value (€)",
                     format="€ %.2f",
                     width="small",
+                    help=METRIC_HELP_TEXTS.get('Current Value (€)')
                 ),
                 "Net Return (€)": st.column_config.NumberColumn(
                     "Profit/Loss (€)",
                     format="€ %.2f",
                     width="small",
+                    help=METRIC_HELP_TEXTS.get('Net Return (€)')
                 ),
                 "Cost Basis (€)": st.column_config.NumberColumn(
                     "Cost Basis (€)",
                     format="€ %.2f",
-                    width="small"
+                    width="small",
+                    help=METRIC_HELP_TEXTS.get('Cost Basis (€)')
+                ),
+                "Total Cost (€)": st.column_config.NumberColumn(
+                    "Total Cost (€)",
+                    format="€ %.2f",
+                    width="small",
+                    help=METRIC_HELP_TEXTS.get('Total Cost (€)')
                 ),
                 "Quantity": st.column_config.NumberColumn(
                     "Quantity",
@@ -220,7 +230,8 @@ if not df.empty:
                 "Net Performance (%)": st.column_config.NumberColumn(
                     "Profit/Loss (%)",
                     format="%.2f%%",
-                    width="small"
+                    width="small",
+                    help=METRIC_HELP_TEXTS.get('Net Performance (%)')
                 ),
                 "Net Performance (%) - Trend": st.column_config.AreaChartColumn(
                     "30-day P/L (%)",

@@ -160,16 +160,16 @@ class PortfolioAnalyzer:
         else:
             current_return = 0
 
+        # Cost basis
+        cost_basis = quantity_held*avg_cost
+
         # Net return and current value of the stock
         net_return = current_return + realized_return
         current_value = (quantity_held*avg_cost) + current_return
         
         # Performance percentages
-        current_performance_percentage = ((current_return) / purchase_cost) * 100 if (current_return and purchase_cost) else 0
+        current_performance_percentage = ((current_return) / cost_basis) * 100 if (current_return and cost_basis) else 0
         net_performance_percentage = ((current_return + realized_return) / purchase_cost) * 100 if purchase_cost else 0
-
-        # Cost basis
-        cost_basis = quantity_held*avg_cost
 
         return {
             "product": product,
@@ -218,7 +218,7 @@ class PortfolioAnalyzer:
             avg_cost_port = 0
 
         # Performance percentages
-        current_performance_percentage = ((current_return) / purchase_cost) * 100 if (current_return and purchase_cost) else 0
+        current_performance_percentage = ((current_return) / cost_basis_total) * 100 if (current_return and cost_basis_total) else 0
         net_performance_percentage = ((current_return + realized_return) / purchase_cost) * 100 if purchase_cost else 0
         
         # Return the aggregated portfolio performance metrics

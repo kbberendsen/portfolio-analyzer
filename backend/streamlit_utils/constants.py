@@ -47,24 +47,27 @@ PERFORMANCE_METRIC_RENAME = {
 METRIC_HELP_TEXTS = {
     'Average Cost (€)': (
         "The average purchase price per unit of the currently held position, "
-        "including transaction costs. Calculated as total cost divided by the "
-        "number of units currently held. Sell transactions do not affect the average cost."
+        "including transaction costs. Calculated as total purchase cost divided "
+        "by the number of units currently held. Sell transactions do not affect "
+        "the average cost."
     ),
 
     'Cost Basis (€)': (
-        "The total capital invested in the currently held position, "
-        "calculated as the number of units held multiplied by the average purchase price per unit."
+        "The total capital currently invested in open positions. Calculated as "
+        "the number of units currently held multiplied by the average purchase "
+        "price per unit. This value decreases when positions are partially or "
+        "fully sold."
     ),
 
     'Total Cost (€)': (
-        "The total amount of capital invested into the portfolio over time, including "
-        "all purchases and transaction costs. This is a cumulative metric that only "
-        "increases and does not decrease when positions are sold."
+        "The total amount of capital invested into the portfolio over time, "
+        "including all purchases and transaction costs. This is a cumulative "
+        "metric that only increases and does not decrease when positions are sold."
     ),
 
     'Transaction Costs (€)': (
         "The total transaction costs paid for the position, such as brokerage "
-        "fees. These costs are included in net return and performance calculations."
+        "fees. These costs are included in return and performance calculations."
     ),
 
     'Current Value (€)': (
@@ -73,46 +76,47 @@ METRIC_HELP_TEXTS = {
     ),
 
     'Current Return (€)': (
-        "The unrealized money-weighted profit or loss of all currently held positions "
-        "on the last day of the selected period. This return accounts for the timing "
-        "and size of investments and represents the difference between current market "
-        "value and invested capital in open positions. Sold positions are excluded."
+        "The unrealized profit or loss of currently held positions on the last "
+        "day of the selected period. Calculated as the difference between the "
+        "current market value and the cost basis of open positions. Sold "
+        "positions are excluded."
     ),
 
     'Realized Return (€)': (
         "The profit or loss realized from positions that have been sold during "
-        "the selected period. Calculated as selling proceeds minus purchase costs "
-        "and transaction costs."
+        "the selected period. Calculated as selling proceeds minus the associated "
+        "purchase costs and transaction costs."
     ),
 
     'Net Return (€)': (
-        "The total portfolio return on the last day of the selected period, "
-        "including both realized returns from sold positions and unrealized returns "
-        "from currently held positions. This represents the overall profit or loss "
-        "of the portfolio."
+        "The total profit or loss of the portfolio on the last day of the selected "
+        "period, combining realized returns from sold positions and unrealized "
+        "returns from currently held positions."
     ),
 
     'Current Performance (%)': (
-        "The unrealized return of currently held positions expressed as a percentage "
-        "of their total cost. Calculated as current return divided by total cost."
+        "The unrealized performance of currently held positions expressed as a "
+        "percentage of the cost basis. Calculated as current return divided by "
+        "cost basis."
     ),
 
     'Net Performance (%)': (
-        "The total portfolio return expressed as a percentage of the total invested "
-        "capital. Includes both realized and unrealized returns."
+        "The total portfolio performance expressed as a percentage of the total "
+        "capital invested over time. Calculated as net return divided by total "
+        "cost. Includes both realized and unrealized returns."
     ),
 
-     'YTD - Net Return (€)': (
+    'YTD - Net Return (€)': (
         "The year-to-date change in total net return since the end of the previous "
-        "calendar year. Calculated as the difference between the current net return "
-        "and the net return recorded on the last day of last year. "
+        "calendar year. Calculated as the difference between the current net "
+        "return and the net return recorded on the last day of last year. "
         "Includes both realized and unrealized returns."
     ),
 
     'YTD - Net Performance (%)': (
-        "The year-to-date net return expressed as a percentage of the total invested "
-        "capital at the end of the previous calendar year. Calculated as the change in "
-        "net return since last year-end divided by the total cost at that time. "
-        "This is a money-weighted performance measure."
+        "The year-to-date portfolio performance expressed as a percentage of the "
+        "total cost at the end of the previous calendar year. Calculated as the "
+        "change in net return since last year-end divided by the total cost at "
+        "that time. This is a money-weighted performance measure."
     )
 }
