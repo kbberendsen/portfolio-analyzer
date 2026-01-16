@@ -48,7 +48,7 @@ METRIC_HELP_TEXTS = {
     'Average Cost (€)': (
         "The average purchase price per unit of the currently held position, "
         "including transaction costs. Calculated as total cost divided by the "
-        "number of units currently held."
+        "number of units currently held. Sell transactions do not affect the average cost."
     ),
 
     'Cost Basis (€)': (

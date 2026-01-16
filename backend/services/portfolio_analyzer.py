@@ -195,6 +195,7 @@ class PortfolioAnalyzer:
         quantity = 0
         purchase_cost = 0
         transaction_costs_total = 0
+        cost_basis_total = 0
         current_value = 0
         current_return = 0
         realized_return = 0
@@ -215,7 +216,6 @@ class PortfolioAnalyzer:
             avg_cost_port = purchase_cost/quantity
         else:
             avg_cost_port = 0
-            cost_basis_total = 0
 
         # Performance percentages
         current_performance_percentage = ((current_return) / purchase_cost) * 100 if (current_return and purchase_cost) else 0
