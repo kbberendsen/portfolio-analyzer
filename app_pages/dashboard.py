@@ -523,18 +523,17 @@ if not filtered_df.empty:
 
     # Add comparison line if another product is selected
     if not compare_product_df.empty:
-        compare_filtered_df = compare_product_df[
-            (compare_filtered_df['End Date'] >= selected_start_date) &
-            (compare_filtered_df['End Date'] <= selected_end_date)
-        ].sort_values(by='End Date')
+        compare_filtered_df = compare_product_df[(compare_product_df['End Date'] >= selected_start_date) & (compare_product_df['End Date'] <= selected_end_date)].sort_values(by='End Date')
+        fig.add_scatter(x=compare_filtered_df['End Date'], 
+                        y=compare_filtered_df[selected_metric], 
+                        mode='lines', 
+                        name=f"{selected_compare_product}", 
+                        line=dict(color='orange', shape='spline', smoothing=0.7))
 
-        fig.add_scatter(
-            x=compare_filtered_df['End Date'],
-            y=compare_filtered_df[selected_metric],
-            mode='lines',
-            name=f"{selected_compare_product}",
-            line=dict(color='orange', shape='spline', smoothing=0.7)
-        )
+        # Set legend visible if two lines are plotted
+        fig.update_layout(showlegend=True, legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", yanchor="bottom"))
+
+    st.plotly_chart(fig, width='content')    
 
     # Layout
     fig.update_layout(
