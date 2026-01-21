@@ -140,8 +140,8 @@ def load_and_prepare_data() -> pd.DataFrame:
                 .astype(int)
         )
         df['Action'] = df['Quantity'].apply(lambda x: 'BUY' if x > 0 else 'SELL')
-        df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y')
-        df['Time'] = pd.to_datetime(df['Time'], format='%H:%M').dt.time
+        df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y', errors='coerce').dt.date
+        df['Time'] = pd.to_datetime(df['Time'], format='%H:%M', errors='coerce').dt.time
 
         df['Price'] = df['Price'].fillna(0).astype(float)
         df['Cost'] = df['Cost'].fillna(0).astype(float)

@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import plotly.express as px
 import os
 import requests
@@ -87,7 +87,7 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 csv_files = [f for f in os.listdir(UPLOADS_DIR) if f.endswith(".csv")]
 
 # File path for transactions CSV
-file_path = os.path.join(UPLOADS_DIR, TRANSACTIONS_CSV)
+file_path_transactions = os.path.join(UPLOADS_DIR, TRANSACTIONS_CSV)
 file_path_degiro = os.path.join(SCREENSHOTS_DIR, DEGIRO_TRANSACTIONS_IMG)
 
 # Check for transaction file in the uploads folder
@@ -103,7 +103,7 @@ if not csv_files:
     
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
-        df.to_csv(file_path, index=False)
+        df.to_csv(file_path_transactions, index=False)
         st.success("File uploaded successfully! Please reload the page.")
     st.stop()
 
@@ -139,9 +139,8 @@ def refresh_data(uploaded_file=None):
             return
 
         # Save the new data to file
-        file_path = os.path.join('uploads', 'Transactions.csv')
-        new_data.to_csv(file_path, index=False)
-        st.success(f"Data saved to {file_path}")
+        new_data.to_csv(file_path_transactions, index=False)
+        st.success(f"Data saved to {file_path_transactions}")
     
     # Trigger the backend API to refresh data
     try:
@@ -172,10 +171,8 @@ if not st.session_state.startup_refresh:
                     with st.expander("Delete uploaded CSV file", expanded=False):
                         st.warning("This will delete the transactions CSV file. Do this if you have uploaded a faulty file.")
                         if st.button("Delete", type="primary"):
-                            # Delete mapping json
                             try:
-                                file_path = "uploads/Transactions.csv"
-                                os.remove(file_path)
+                                os.remove(file_path_transactions)
                                 st.success("Transactions CSV file deleted.")
                             except:
                                 st.error("Failed to delete CSV file.")
@@ -193,11 +190,9 @@ if not st.session_state.startup_refresh:
         with st.expander("Delete Data", expanded=False):
             st.warning("This will delete all data from the database. Initial load will be required after this action.")
             if st.button('Delete Data', type="primary"):
-
                 # Delete transaction csv
                 try:
-                    file_path = "uploads/Transaction.csv"
-                    os.remove(file_path)
+                    os.remove(file_path_transactions)
                 except:
                     pass
 
@@ -275,8 +270,7 @@ try:
 
                 # Delete transaction csv
                 try:
-                    file_path = "uploads/Transaction.csv"
-                    os.remove(file_path)
+                    os.remove(file_path_transactions)
                 except:
                     pass
 
@@ -552,7 +546,16 @@ else:
     st.write("No data available for the selected product and date range.")
 
 with st.expander("Data", expanded=False):
-    st.write(filtered_df.drop(columns=['Start Date']))
+    # Drop Start Date
+    filtered_df = filtered_df.drop(columns=['Start Date'], errors='ignore')
+
+    # Convert End Date to date objects
+    if 'End Date' in filtered_df.columns:
+        filtered_df['End Date'] = filtered_df['End Date'].apply(
+            lambda d: d.date() if hasattr(d, 'date') else d
+        ).astype(object)
+
+    st.write(filtered_df)
 
 with st.sidebar:
     # File uploader for the user to upload a new CSV file
@@ -582,8 +585,7 @@ with st.sidebar:
 
             # Delete transaction csv
             try:
-                file_path = "uploads/Transaction.csv"
-                os.remove(file_path)
+                os.remove(file_path_transactions)
             except:
                 pass
 

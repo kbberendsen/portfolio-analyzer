@@ -1,6 +1,6 @@
 import pandas as pd
 import yfinance as yf
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 import json
 import warnings
 
@@ -10,36 +10,41 @@ class PortfolioAnalyzer:
     def __init__(self, transactions):
         """Initialize with transaction data (pandas DataFrame)."""
         self.transactions = transactions
+        self.transactions["Date"] = pd.to_datetime(self.transactions["Date"]).dt.date
 
     def get_price_at_date(self, tickers, start, end):
-        # Convert string dates to datetime
-        start = datetime.strptime(start, '%Y-%m-%d')
-        end = datetime.strptime(end, '%Y-%m-%d')
-
+        """
+        Fetch daily closing prices for given tickers.
+        Only add +1 day to `end` if end is today (to ensure Yahoo returns latest data).
+        """
         # Download stock data
         stock_data = yf.download(tickers, start=start, end=end, interval="1d")["Close"]
 
         # Convert timestamps to date strings
         if isinstance(stock_data, pd.Series):  # Single stock case
-            stock_prices_str = {date.strftime('%Y-%m-%d'): price for date, price in stock_data.items()}
+            stock_prices_dates = {date.date(): price for date, price in stock_data.items()}
         else:  # Multiple stocks case
-            stock_prices_str = {
-                stock: {date.strftime('%Y-%m-%d'): price for date, price in prices.items()}
+            stock_prices_dates = {
+                stock: {date.date(): price for date, price in prices.items()}
                 for stock, prices in stock_data.to_dict().items()
             }
-
-        return stock_prices_str
+        return stock_prices_dates
 
     def get_first_last_open_day(self, start_date, end_date, stock_price_data, first=True):
         """Fetches the first or last open market day within a given date range using stock_price_data."""
 
         # Filter stock_price_data for the given date range
         stock_prices = stock_price_data
+        today = datetime.now(timezone.utc).date()
 
-        filtered_dates = [date for date in stock_prices.keys() if start_date <= datetime.strptime(date, '%Y-%m-%d') < end_date]
+        # If end_date is today, include it
+        if end_date == today:
+            filtered_dates = [d for d in stock_prices.keys() if start_date <= d <= end_date]
+        else:
+            filtered_dates = [d for d in stock_prices.keys() if start_date <= d < end_date]
 
         if not filtered_dates:
-            return start_date.strftime('%Y-%m-%d') if first else end_date.strftime('%Y-%m-%d')
+            return start_date if first else end_date
 
         # Return the first or last open market day
         return min(filtered_dates) if first else max(filtered_dates)
@@ -68,25 +73,27 @@ class PortfolioAnalyzer:
 
         # Build date string: rate dictionary
         fx_rates = {
-            date.strftime('%Y-%m-%d'): price
+            pd.to_datetime(date).date():  price
             for date, price in close_series.items()
         }
 
         return fx_rates
 
-    def calculate_mwr(self, stock, start_date, end_date=date.today().strftime('%Y-%m-%d'), stock_price_data=None):
+    def calculate_mwr(self, stock, start_date, end_date=datetime.now(timezone.utc).date(), stock_price_data=None):
         """Calculate Money Weighted Return using individual performance tracking for each transaction."""
         
-        # Convert dates to datetime format
-        start_date = datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.strptime(end_date, '%Y-%m-%d') + pd.Timedelta(days=1)
-
         # Delete 'nan' values in stock_price_data
         stock_price_data = {k: v for k, v in stock_price_data.items() if v == v}
 
         # Filter transactions within the date range
-        period_transactions = self.transactions[(self.transactions["Date"] >= start_date) & (self.transactions["Date"] <= end_date) & (self.transactions['Stock'] == stock)]
-        previous_transactions = self.transactions[(self.transactions["Date"] < start_date) & (self.transactions['Stock'] == stock)]
+        period_transactions = self.transactions[
+            (self.transactions["Date"] >= start_date) &
+            (self.transactions["Date"] <= end_date) &
+            (self.transactions['Stock'] == stock)]
+        
+        previous_transactions = self.transactions[
+            (self.transactions["Date"] < start_date) &
+            (self.transactions['Stock'] == stock)]
 
         all_transactions = pd.concat([previous_transactions, period_transactions], ignore_index=True)
 
@@ -148,10 +155,9 @@ class PortfolioAnalyzer:
         if quantity_held > 0:
             # Corrected end_date for market open
             end_date_cor = self.get_first_last_open_day(start_date, end_date, stock_price_data, first=False)
-            end_date_cor = datetime.strptime(end_date_cor, '%Y-%m-%d')
             
             # Get stock price from pre-fetched data
-            end_price = stock_price_data.get(str(end_date_cor.strftime('%Y-%m-%d')), 0)
+            end_price = stock_price_data.get(end_date_cor, 0)
 
             if end_price is None:
                 end_price = 0
@@ -175,8 +181,8 @@ class PortfolioAnalyzer:
             "product": product,
             "ticker": stock,
             "quantity": int(quantity_held),
-            "start_date": start_date.strftime('%Y-%m-%d'),
-            "end_date": end_date.strftime('%Y-%m-%d'),
+            "start_date": start_date,
+            "end_date": end_date,
             "avg_cost": round(avg_cost, 2),
             "cost_basis": round(cost_basis, 2),
             "total_cost": round(purchase_cost, 2),

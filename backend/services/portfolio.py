@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pandas as pd
 import json
 import warnings
@@ -38,12 +38,12 @@ def calc_portfolio():
             app_logger.warning("[PORTFOLIO-CALC] No valid transactions with a stock ticker. Skipping portfolio calculation.")
             return
         
-        transactions["Date"] = pd.to_datetime(transactions["Date"])
+        transactions["Date"] = pd.to_datetime(transactions["Date"], utc=True).dt.date
         start_date = transactions['Date'].min()
-        today = datetime.today()
-        end_dates = pd.date_range(start=start_date, end=today, freq='D')[1:]  # Exclude the start_date itself
+        today = datetime.now(timezone.utc).date()
+        end_dates = [d.date() for d in pd.date_range(start=start_date, end=today, freq='D')[1:]]  # Exclude the start_date itself
 
-        app_logger.info(f"[PORTFOLIO-CALC] Processing portfolio performance from {start_date.strftime('%Y-%m-%d')} to {today.strftime('%Y-%m-%d')}")
+        app_logger.info(f"[PORTFOLIO-CALC] Processing portfolio performance from {start_date.isoformat()} to {today.isoformat()}")
 
         # Initialize an empty list to store portfolio data for each day
         portfolio_results_list = []
@@ -87,15 +87,15 @@ def calc_portfolio():
         # Load existing portfolio performance from DB
         try:
             portfolio_results_df = load_portfolio_performance_from_db()
-            portfolio_results_df["start_date"] = pd.to_datetime(portfolio_results_df["start_date"]).dt.strftime("%Y-%m-%d")
-            portfolio_results_df["end_date"] = pd.to_datetime(portfolio_results_df["end_date"]).dt.strftime("%Y-%m-%d")
+            portfolio_results_df["start_date"] = pd.to_datetime(portfolio_results_df["start_date"], format='%d-%m-%Y', errors='coerce').dt.date
+            portfolio_results_df["end_date"] = pd.to_datetime(portfolio_results_df["end_date"], format='%d-%m-%Y', errors='coerce').dt.date
             if portfolio_results_df.empty:
                 raise ValueError("Empty portfolio data from DB")
             app_logger.info("[PORTFOLIO-CALC] Loaded portfolio_performance_daily from DB")
 
             # Remove last 3 days to force refresh (get end of day data)
-            last_2_days = sorted(portfolio_results_df['end_date'].unique())[-3:]
-            portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_2_days)]
+            last_3_days = sorted(portfolio_results_df['end_date'].unique())[-3:]
+            portfolio_results_df = portfolio_results_df[~portfolio_results_df['end_date'].isin(last_3_days)]
 
         except Exception as e:
             app_logger.warning(f"[PORTFOLIO-CALC] Failed to load portfolio_performance_daily from DB: {e}")
@@ -108,7 +108,7 @@ def calc_portfolio():
         # Load stock prices from DB
         try:
             stock_prices_df = load_stock_prices_from_db()
-            stock_prices_df["date"] = pd.to_datetime(stock_prices_df["date"]).dt.strftime("%Y-%m-%d")
+            stock_prices_df["date"] = pd.to_datetime(stock_prices_df["date"], format='%d-%m-%Y', errors='coerce').dt.date
             if stock_prices_df.empty:
                 raise ValueError("Empty stock prices data from DB")
             stock_prices_df = stock_prices_df.dropna(subset=['price'])
@@ -133,32 +133,29 @@ def calc_portfolio():
         for end_date in end_dates:
             # Try to get end_date data, else continue
             try:
-                # Format end date to string for comparison
-                end_date_str = end_date.strftime('%Y-%m-%d')
-
                 # Skip weekends (Saturday and Sunday)
                 if end_date.weekday() >= 5:
                     continue  # Skip this iteration if it's a weekend
                 
                 # Check if the result for this end date already exists in the DataFrame
-                if not portfolio_results_df[portfolio_results_df['end_date'] == end_date_str].empty:
+                if not portfolio_results_df[portfolio_results_df['end_date'] == end_date].empty:
                     continue  # Skip if already present
 
-                app_logger.info(f"[PORTFOLIO-CALC] Retrieving data for: {end_date_str}")
+                app_logger.info(f"[PORTFOLIO-CALC] Retrieving data for: {end_date.isoformat()}")
 
                 # Ensure that the transactions before the end date are not empty
-                transactions_before_end = transactions[transactions["Date"].apply(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, datetime) else x) <= end_date_str]
+                transactions_before_end = transactions[transactions["Date"] <= end_date]
 
                 if transactions_before_end.empty:
-                    app_logger.info(f"[PORTFOLIO-CALC] No transactions found for date: {end_date_str}. Skipping...")
+                    app_logger.info(f"[PORTFOLIO-CALC] No transactions found for date: {end_date.isoformat()}. Skipping...")
                     continue
 
                 stock_list = list(transactions_before_end["Stock"].unique())
                 
                 # Retrieve stock results using analyzer class
                 result = analyzer.calculate_all_stocks_mwr(
-                    start_date=start_date.strftime('%Y-%m-%d'), 
-                    end_date=end_date_str, 
+                    start_date=start_date, 
+                    end_date=end_date, 
                     stocks=stock_list,
                     stock_prices=stock_prices_dict
                 )
@@ -168,11 +165,11 @@ def calc_portfolio():
                     
                     # Check if portfolio_data is valid before proceeding
                     if portfolio_data is None or not isinstance(portfolio_data, dict):
-                        app_logger.warning(f"[PORTFOLIO-CALC] Stock data is missing or invalid for date: {end_date_str}. Result: {result}")
+                        app_logger.warning(f"[PORTFOLIO-CALC] Stock data is missing or invalid for date: {end_date.isoformat()}. Result: {result}")
                         continue
                     
                     # Ensure end_date is included in the portfolio_data
-                    portfolio_data['end_date'] = end_date_str
+                    portfolio_data['end_date'] = end_date
                     
                     # Append the new data to the list
                     portfolio_results_list.append(portfolio_data)
@@ -203,6 +200,12 @@ def calc_portfolio():
         }
 
         portfolio_results_df['product'] = portfolio_results_df['ticker'].map(ticker_to_name).fillna('')
+
+        # Ensure no rows with missing tickers
+        portfolio_results_df = portfolio_results_df.dropna(subset=['ticker'])
+        portfolio_results_df = portfolio_results_df[portfolio_results_df['ticker'] != '']
+        if portfolio_results_df.empty:
+            app_logger.warning("[PORTFOLIO-CALC] No valid portfolio rows to save to DB.")
 
         # Daily table
         # Save updated daily portfolio performance to database (upsert)
