@@ -474,33 +474,119 @@ if not filtered_df.empty:
     else:
         st.metric(label=selected_metric, value=selected_metric_value, delta=selected_metric_delta, border=False, width="content", help=METRIC_HELP_TEXTS.get(selected_metric))
 
-    # Checkbox for Cost Basis (€) below the plot
-    if selected_metric == "Current Value (€)":
-        st.session_state.show_cost_basis = st.checkbox("Show Cost Basis (€)", value=st.session_state.show_cost_basis, help=METRIC_HELP_TEXTS.get('Cost Basis (€)'))
-    else:
+    # Checkboxes for markers and cost basis
+    if "show_markers" not in st.session_state:
+        st.session_state.show_markers = False
+    if "show_cost_basis" not in st.session_state:
         st.session_state.show_cost_basis = False
 
+    # Create two columns
+    col1, col2, col3 = st.columns(3)
+
+    # Checkbox for Buy/Sell markers
+    with col1:
+        st.checkbox(
+            "Show Buy/Sell Markers",
+            value=st.session_state.show_markers,
+            key="show_markers",
+            help="Show markers to indicate when buying (green) and selling (red) transactions occurred."
+        )
+
+    # Checkbox for Cost Basis (only if metric is Current Value (€))
+    with col2:
+        if selected_metric == "Current Value (€)":
+            st.checkbox(
+                "Show Cost Basis (€)",
+                value=st.session_state.show_cost_basis,
+                key="show_cost_basis",
+                help=METRIC_HELP_TEXTS.get('Cost Basis (€)')
+            )
+
     # Plot
+
+    # Prepare products to plot: main + optional comparison
+    products_to_plot = [(filtered_df, selected_product, "#1f77b4")]
+    if not compare_product_df.empty:
+        compare_filtered_df = compare_product_df[
+            (compare_product_df['End Date'] >= selected_start_date) &
+            (compare_product_df['End Date'] <= selected_end_date)
+        ].sort_values(by='End Date')
+        products_to_plot.append((compare_filtered_df, selected_compare_product, "orange"))
+
+    # Create empty figure
     fig = px.line()
 
-    # Add main product line
-    fig.add_scatter(
-        x=filtered_df['End Date'],
-        y=filtered_df[selected_metric],
-        mode='lines',
-        name=f"{selected_product}",
-        line=dict(color="#1f77b4", shape='spline', smoothing=0.7)
-    )
+    # Flags for legend entries
+    cost_basis_needed = selected_metric == "Current Value (€)" and st.session_state.show_cost_basis
+    has_buys = False
+    has_sells = False
 
-    # Add grey Cost Basis line if checkbox is checked
-    if selected_metric == "Current Value (€)" and st.session_state.show_cost_basis:
+    for df, product_name, line_color in products_to_plot:
+        # Add main line
         fig.add_scatter(
-            x=filtered_df['End Date'],
-            y=filtered_df['Cost Basis (€)'],
+            x=df['End Date'],
+            y=df[selected_metric],
             mode='lines',
-            name="Cost Basis (€)",
-            line=dict(color='grey', shape='spline', smoothing=0.7, dash='dot')
+            name=product_name,
+            line=dict(color=line_color, shape='spline', smoothing=0.7)
         )
+
+        # Add Cost Basis line if checkbox is checked (only for Current Value (€))
+        if cost_basis_needed:
+            fig.add_scatter(
+                x=df["End Date"],
+                y=df["Cost Basis (€)"],
+                mode="lines",
+                name="Cost Basis (€)",
+                showlegend=False,
+                line=dict(color="grey", shape="spline", smoothing=0.7, dash="dot")
+            )
+
+        # Add Buy/Sell markers (hidden from legend)
+        if st.session_state.show_markers:
+            df["cost_basis_delta"] = df["Cost Basis (€)"].diff()
+            buys = df[df["cost_basis_delta"] > 0]
+            sells = df[df["cost_basis_delta"] < 0]
+
+            marker_offset = 0.03 * (df[selected_metric].max() - df[selected_metric].min())
+
+            if not buys.empty:
+                has_buys = True
+                fig.add_scatter(
+                    x=buys["End Date"],
+                    y=buys[selected_metric] + marker_offset,
+                    mode="markers",
+                    name="Buy",
+                    showlegend=False,
+                    marker=dict(color="#09ab3b", size=9, symbol="triangle-up", line=dict(color="black", width=0.5)),
+                    hovertemplate=(
+                        "<b>Buy</b><br>"
+                        "Product: " + product_name + "<br>"
+                        "Date: %{x}<br>"
+                        + selected_metric + ": %{y:.2f}<br>"
+                        "Δ Cost Basis: €%{customdata:.2f}<extra></extra>"
+                    ),
+                    customdata=buys["cost_basis_delta"]
+                )
+
+            if not sells.empty:
+                has_sells = True
+                fig.add_scatter(
+                    x=sells["End Date"],
+                    y=sells[selected_metric] + marker_offset,
+                    mode="markers",
+                    name="Sell",
+                    showlegend=False,
+                    marker=dict(color="#ff2b2b", size=9, symbol="triangle-down", line=dict(color="black", width=0.5)),
+                    hovertemplate=(
+                        "<b>Sell</b><br>"
+                        "Product: " + product_name + "<br>"
+                        "Date: %{x}<br>"
+                        + selected_metric + ": %{y:.2f}<br>"
+                        "Δ Cost Basis: €%{customdata:.2f}<extra></extra>"
+                    ),
+                    customdata=sells["cost_basis_delta"]
+                )
 
     # Add dashed line at y=0 if needed
     if (filtered_df[selected_metric] < 0).any():
@@ -515,14 +601,33 @@ if not filtered_df.empty:
             yref="y"
         )
 
-    # Add comparison line if another product is selected
-    if not compare_product_df.empty:
-        compare_filtered_df = compare_product_df[(compare_product_df['End Date'] >= selected_start_date) & (compare_product_df['End Date'] <= selected_end_date)].sort_values(by='End Date')
-        fig.add_scatter(x=compare_filtered_df['End Date'], 
-                        y=compare_filtered_df[selected_metric], 
-                        mode='lines', 
-                        name=f"{selected_compare_product}", 
-                        line=dict(color='orange', shape='spline', smoothing=0.7))  
+    # Add dummy traces for legend at the end
+    if cost_basis_needed:
+        fig.add_scatter(
+            x=[None],
+            y=[None],
+            mode="lines",
+            name="Cost Basis (€)",
+            line=dict(color="grey", shape="spline", smoothing=0.7, dash="dot")
+        )
+
+    if has_buys:
+        fig.add_scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            name="Buy",
+            marker=dict(color="#09ab3b", size=9, symbol="triangle-up", line=dict(color="black", width=0.5))
+        )
+
+    if has_sells:
+        fig.add_scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            name="Sell",
+            marker=dict(color="#ff2b2b", size=9, symbol="triangle-down", line=dict(color="black", width=0.5))
+        )
 
     # Layout
     fig.update_layout(
@@ -532,7 +637,7 @@ if not filtered_df.empty:
         showlegend=True,
         legend=dict(
             orientation="h",
-            y=1.15,         # higher than 1 to place above plot
+            y=1.15,
             x=0.5,
             xanchor="center",
             yanchor="bottom"
@@ -540,14 +645,14 @@ if not filtered_df.empty:
     )
 
     # Display
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig)
 
 else:
     st.write("No data available for the selected product and date range.")
 
 with st.expander("Data", expanded=False):
     # Drop Start Date
-    filtered_df = filtered_df.drop(columns=['Start Date'], errors='ignore')
+    filtered_df = filtered_df.drop(columns=['Start Date', 'cost_basis_delta'], errors='ignore')
 
     # Convert End Date to date objects
     if 'End Date' in filtered_df.columns:
@@ -571,7 +676,7 @@ with st.sidebar:
         st.rerun()
 
     # Refresh Button to refresh database if env variable is set to true
-    if os.getenv("USE_SUPABASE", "true").lower() == "true":
+    if os.getenv("USE_SUPABASE", "false").lower() == "true":
         if st.button('Sync with Database'):
             # The trigger_db_sync function calls the API and handles showing
             # a success, warning, or error message.

@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import warnings
 import time
+import math
 from backend.utils.logger import app_logger
 from backend.services.transactions import get_transactions
 from backend.services.portfolio_analyzer import PortfolioAnalyzer
@@ -11,6 +12,23 @@ from backend.utils.refresh_status import set_refresh_status, get_refresh_status
 from backend.utils.db import SessionLocal, load_portfolio_performance_from_db, load_stock_prices_from_db, save_portfolio_performance_to_db, save_stock_prices_to_db
 
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
+
+def is_rate_limited(price_dict: dict) -> bool:
+    """
+    Detect Yahoo Finance rate limiting when ALL tickers return only NaN values.
+    """
+    if not price_dict:
+        return True
+
+    for ticker, date_price_map in price_dict.items():
+        if not date_price_map:
+            continue
+
+        for price in date_price_map.values():
+            if price is not None and not math.isnan(price):
+                return False  # Found at least one valid price
+
+    return True
 
 def calc_portfolio():
     app_logger.info("[PORTFOLIO-CALC] Starting portfolio calculation...")
@@ -53,6 +71,9 @@ def calc_portfolio():
 
         yf_start_date = start_date if len(end_dates) > 30 else (today - timedelta(days=30))
         yf_stock_price_data = analyzer.get_price_at_date(stock_list, yf_start_date.strftime('%Y-%m-%d'), (today + timedelta(days=1)).strftime('%Y-%m-%d'))
+
+        if is_rate_limited(yf_stock_price_data):
+            raise RuntimeError("Rate limit detected (all prices NaN)")
     
         # Update stock prices to EUR
         # Remove duplicates and create ticker-to-currency dict
