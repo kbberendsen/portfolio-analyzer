@@ -548,7 +548,7 @@ if not filtered_df.empty:
             buys = df[df["cost_basis_delta"] > 0]
             sells = df[df["cost_basis_delta"] < 0]
 
-            marker_offset = 0.03 * (df[selected_metric].max() - df[selected_metric].min())
+            marker_offset = 0.04 * (df[selected_metric].max() - df[selected_metric].min())
 
             if not buys.empty:
                 has_buys = True
@@ -558,7 +558,7 @@ if not filtered_df.empty:
                     mode="markers",
                     name="Buy",
                     showlegend=False,
-                    marker=dict(color="#09ab3b", size=9, symbol="triangle-up", line=dict(color="black", width=0.5)),
+                    marker=dict(color="#09ab3b", size=11, symbol="triangle-up", line=dict(color="black", width=0.7)),
                     hovertemplate=(
                         "<b>Buy</b><br>"
                         "Product: " + product_name + "<br>"
@@ -577,7 +577,7 @@ if not filtered_df.empty:
                     mode="markers",
                     name="Sell",
                     showlegend=False,
-                    marker=dict(color="#ff2b2b", size=9, symbol="triangle-down", line=dict(color="black", width=0.5)),
+                    marker=dict(color="#ff2b2b", size=11, symbol="triangle-down", line=dict(color="black", width=0.7)),
                     hovertemplate=(
                         "<b>Sell</b><br>"
                         "Product: " + product_name + "<br>"
@@ -617,7 +617,7 @@ if not filtered_df.empty:
             y=[None],
             mode="markers",
             name="Buy",
-            marker=dict(color="#09ab3b", size=9, symbol="triangle-up", line=dict(color="black", width=0.5))
+            marker=dict(color="#09ab3b", size=11, symbol="triangle-up", line=dict(color="black", width=0.7))
         )
 
     if has_sells:
@@ -626,7 +626,7 @@ if not filtered_df.empty:
             y=[None],
             mode="markers",
             name="Sell",
-            marker=dict(color="#ff2b2b", size=9, symbol="triangle-down", line=dict(color="black", width=0.5))
+            marker=dict(color="#ff2b2b", size=11, symbol="triangle-down", line=dict(color="black", width=0.7))
         )
 
     # Layout
