@@ -10,13 +10,6 @@ from backend.streamlit_utils.constants import (
     PERFORMANCE_METRIC_RENAME
 )
 
-# Auth
-# if not st.user.is_logged_in:
-#     st.warning("You must log in to use this app.")
-#     if st.button("Log in"):
-#         st.login("auth0")
-#     st.stop()
-
 # Config
 st.set_page_config(page_title="Stock Split Calculator", page_icon=":bar_chart:", layout="centered")
 API_BASE_URL = os.getenv(ENV_API_BASE_URL_KEY, API_BASE_URL)

@@ -31,23 +31,35 @@ class PortfolioAnalyzer:
         return stock_prices_dates
 
     def get_first_last_open_day(self, start_date, end_date, stock_price_data, first=True):
-        """Fetches the first or last open market day within a given date range using stock_price_data."""
+        # """Fetches the first or last open market day within a given date range using stock_price_data."""
 
-        # Filter stock_price_data for the given date range
-        stock_prices = stock_price_data
-        today = datetime.now(timezone.utc).date()
+        # # Filter stock_price_data for the given date range
+        # stock_prices = stock_price_data
+        # #today = datetime.now(timezone.utc).date()
 
-        # If end_date is today, include it
-        if end_date == today:
-            filtered_dates = [d for d in stock_prices.keys() if start_date <= d <= end_date]
-        else:
-            filtered_dates = [d for d in stock_prices.keys() if start_date <= d < end_date]
+        # effective_today = self.effective_market_date_utc()
 
-        if not filtered_dates:
+        # if end_date == effective_today:
+        #     filtered_dates = [d for d in stock_prices.keys() if start_date <= d <= end_date]
+        # else:
+        #     filtered_dates = [d for d in stock_prices.keys() if start_date <= d < end_date]
+
+        # if not filtered_dates:
+        #     return start_date if first else end_date
+
+        # # Return the first or last open market day
+        # return min(filtered_dates) if first else max(filtered_dates)
+    
+        """
+        Fetches the first or last open market day within a given date range using stock_price_data.
+
+        """
+        available_dates = [d for d in stock_price_data.keys() if start_date <= d <= end_date]
+
+        if not available_dates:
             return start_date if first else end_date
 
-        # Return the first or last open market day
-        return min(filtered_dates) if first else max(filtered_dates)
+        return min(available_dates) if first else max(available_dates)
 
     def get_fx_rate(self, first_currency, second_currency, start, end):
         """Fetch FX rate data as { 'YYYY-MM-DD': rate }."""
@@ -79,7 +91,7 @@ class PortfolioAnalyzer:
 
         return fx_rates
 
-    def calculate_mwr(self, stock, start_date, end_date=datetime.now(timezone.utc).date(), stock_price_data=None):
+    def calculate_mwr(self, stock, start_date, end_date, stock_price_data=None):
         """Calculate Money Weighted Return using individual performance tracking for each transaction."""
         
         # Delete 'nan' values in stock_price_data

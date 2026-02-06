@@ -4,13 +4,6 @@ from datetime import timedelta
 from backend.streamlit_utils.data_loader import get_portfolio_performance_daily
 from backend.streamlit_utils.constants import METRIC_HELP_TEXTS
 
-# Auth
-# if not st.user.is_logged_in:
-#     st.warning("You must log in to use this app.")
-#     if st.button("Log in"):
-#         st.login("auth0")
-#     st.stop()
-
 # Set the page title
 st.set_page_config(page_title="Portfolio Analysis", page_icon="📊", layout="wide")
 

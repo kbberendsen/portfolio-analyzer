@@ -26,13 +26,6 @@ from backend.streamlit_utils.constants import (
     METRIC_HELP_TEXTS
 )
 
-# Auth
-# if not st.user.is_logged_in:
-#     st.warning("You must log in to use this app.")
-#     if st.button("Log in"):
-#         st.login("auth0")
-#     st.stop()
-
 # Config
 st.set_page_config(page_title="Stock Portfolio Dashboard", page_icon=":bar_chart:", layout="centered")
 API_BASE_URL = os.getenv(ENV_API_BASE_URL_KEY, API_BASE_URL)
@@ -40,16 +33,6 @@ API_BASE_URL = os.getenv(ENV_API_BASE_URL_KEY, API_BASE_URL)
 # --------------------
 # APP
 # --------------------
-
-# with st.sidebar:
-#     if st.button("Log out", type="primary"):
-#         st.logout()
-#         st.stop()
-
-#     # Show welcome message only if logged in
-#     if st.user.is_logged_in and hasattr(st.user, "name"):
-#         st.markdown(f"Welcome {st.user.name}!")
-#         #st.markdown(f"Welcome {st.user.sub}!")
 
 with st.sidebar.expander("View Logs", expanded=False):
     log_files = get_log_files()
@@ -548,7 +531,7 @@ if not filtered_df.empty:
             buys = df[df["cost_basis_delta"] > 0]
             sells = df[df["cost_basis_delta"] < 0]
 
-            marker_offset = 0.04 * (df[selected_metric].max() - df[selected_metric].min())
+            marker_offset = 0.03 * (df[selected_metric].max() - df[selected_metric].min())
 
             if not buys.empty:
                 has_buys = True
